@@ -1,0 +1,53 @@
+:root {
+  --ink: #2f241c;
+  --ink-muted: #735f4c;
+  --paper: #fff8e7;
+  --paper-deep: #f2dfbd;
+  --wood: #b77945;
+  --wood-dark: #704324;
+  --wood-line: rgba(112, 67, 36, 0.28);
+  --piece: #d9aa68;
+  --piece-goal: #d88c55;
+  --accent: #9d532b;
+  --accent-deep: #6f341a;
+  --shadow-soft: 0 10px 24px rgba(73, 45, 24, 0.12);
+  --shadow-board: 0 24px 48px rgba(73, 45, 24, 0.22);
+  --sans: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top, rgba(217, 170, 104, 0.32), transparent 34rem),
+    linear-gradient(180deg, var(--paper), var(--paper-deep));
+  font: 16px/1.6 var(--sans);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100svh;
+  margin: 0;
+}
+
+#root {
+  min-height: 100svh;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  color: var(--ink);
+  font-size: clamp(40px, 8vw, 72px);
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
