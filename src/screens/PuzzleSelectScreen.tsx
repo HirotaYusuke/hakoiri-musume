@@ -1,5 +1,11 @@
 import type { Puzzle } from '../domain'
 
+const difficultyLabels: Record<Puzzle['difficulty'], string> = {
+  intro: '入門',
+  standard: '標準',
+  hard: '難問',
+}
+
 type PuzzleSelectScreenProps = {
   readonly puzzles: readonly Puzzle[]
   readonly clearedPuzzleIds: readonly string[]
@@ -27,7 +33,10 @@ export function PuzzleSelectScreen({
             onClick={() => onSelectPuzzle(puzzle)}
             type="button"
           >
-            <span>{clearedPuzzleIds.includes(puzzle.id) ? 'クリア済み' : '未クリア'}</span>
+            <span>
+              {difficultyLabels[puzzle.difficulty]}・
+              {clearedPuzzleIds.includes(puzzle.id) ? 'クリア済み' : '未クリア'}
+            </span>
             <strong>{puzzle.title}</strong>
             <small>{puzzle.description}</small>
           </button>

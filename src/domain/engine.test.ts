@@ -7,11 +7,12 @@ import {
   isCleared,
   movePiece,
   undo,
+  validatePuzzle,
 } from './engine'
 
 describe('domain engine', () => {
   const standardPuzzle = puzzles.find((puzzle) => puzzle.id === 'standard-hakoiri-musume')
-  const firstEscapePuzzle = puzzles.find((puzzle) => puzzle.id === 'first-escape')
+  const firstEscapePuzzle = puzzles.find((puzzle) => puzzle.id === 'intro-first-escape')
 
   if (!standardPuzzle || !firstEscapePuzzle) {
     throw new Error('Test puzzles are missing')
@@ -65,5 +66,15 @@ describe('domain engine', () => {
 
     expect(isCleared(movedOnce)).toBe(false)
     expect(isCleared(movedTwice)).toBe(true)
+  })
+
+  it('問題カタログの難易度構成と初期配置が整合している', () => {
+    expect(puzzles.filter((puzzle) => puzzle.difficulty === 'intro')).toHaveLength(3)
+    expect(puzzles.filter((puzzle) => puzzle.difficulty === 'standard')).toHaveLength(5)
+    expect(puzzles.filter((puzzle) => puzzle.difficulty === 'hard')).toHaveLength(2)
+
+    puzzles.forEach((puzzle) => {
+      expect(validatePuzzle(puzzle), puzzle.title).toEqual([])
+    })
   })
 })

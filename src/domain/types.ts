@@ -4,6 +4,8 @@ export type Direction = 'up' | 'down' | 'left' | 'right'
 
 export type PieceKind = 'goal' | 'vertical' | 'horizontal' | 'small'
 
+export type PuzzleDifficulty = 'intro' | 'standard' | 'hard'
+
 export type Coordinate = {
   readonly x: number
   readonly y: number
@@ -39,6 +41,7 @@ export type Puzzle = {
   readonly id: string
   readonly title: string
   readonly description: string
+  readonly difficulty: PuzzleDifficulty
   readonly board: BoardSize
   readonly goal: PiecePlacement
   readonly pieces: readonly Piece[]

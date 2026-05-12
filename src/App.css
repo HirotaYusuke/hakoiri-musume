@@ -41,18 +41,28 @@
 button {
   border: 1px solid var(--wood-line);
   border-radius: 999px;
+  min-height: 44px;
   padding: 10px 18px;
   color: var(--ink);
   background: var(--paper);
   box-shadow: var(--shadow-soft);
   font: inherit;
   cursor: pointer;
+  transition:
+    transform 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    background 140ms ease;
 }
 
 button:hover:not(:disabled),
 button:focus-visible {
   border-color: var(--accent);
   outline: none;
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
 }
 
 button:disabled {
@@ -140,6 +150,7 @@ button:disabled {
 }
 
 .piece {
+  position: relative;
   z-index: 1;
   display: grid;
   place-items: center;
@@ -152,6 +163,12 @@ button:disabled {
     var(--piece);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35), var(--shadow-soft);
   font-weight: 700;
+  touch-action: manipulation;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
 }
 
 .piece-goal {
@@ -163,6 +180,27 @@ button:disabled {
 .piece[data-selected='true'] {
   border-color: var(--accent);
   box-shadow: 0 0 0 4px rgba(157, 83, 43, 0.2), var(--shadow-soft);
+  transform: translateY(-2px);
+}
+
+.piece[data-movable='true'] {
+  border-color: rgba(157, 83, 43, 0.58);
+}
+
+.piece[data-selected='false'][data-movable='true']::after {
+  content: '動';
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 999px;
+  color: #fff8e7;
+  background: var(--accent);
+  font-size: 12px;
+  box-shadow: var(--shadow-soft);
 }
 
 .control-panel {
@@ -174,14 +212,90 @@ button:disabled {
   background: rgba(255, 248, 231, 0.72);
 }
 
+.selection-status {
+  display: grid;
+  gap: 2px;
+}
+
+.selection-status span,
+.selection-status small {
+  color: var(--ink-muted);
+}
+
+.selection-status strong {
+  font-size: 24px;
+}
+
 .direction-pad {
   display: grid;
-  grid-template-columns: repeat(2, minmax(80px, 1fr));
+  grid-template-columns: repeat(3, minmax(64px, 1fr));
   gap: 10px;
 }
 
+.direction-button {
+  display: grid;
+  min-height: 58px;
+  place-items: center;
+  border-radius: 16px;
+  padding: 8px;
+}
+
+.direction-button span {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.direction-button small {
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+
+.direction-button[data-available='true'] {
+  color: #fff8e7;
+  background: linear-gradient(180deg, var(--accent), var(--accent-deep));
+}
+
+.direction-button[data-available='true'] small {
+  color: #fff8e7;
+}
+
+.direction-up {
+  grid-column: 2;
+}
+
+.direction-left {
+  grid-column: 1;
+}
+
+.direction-right {
+  grid-column: 3;
+}
+
+.direction-down {
+  grid-column: 2;
+}
+
 @media (max-width: 760px) {
+  .screen {
+    width: min(100% - 20px, 520px);
+    padding: 28px 0;
+  }
+
   .play-layout {
     grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .board {
+    --cell-size: clamp(52px, 15vw, 72px);
+  }
+
+  .control-panel {
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .direction-button {
+    min-height: 64px;
   }
 }

@@ -1,11 +1,11 @@
-import type { Direction, PieceId, PuzzleState } from '../domain'
+import { directions, getLegalDirections, type Direction, type PieceId, type PuzzleState } from '../domain'
 import { BoardView } from '../ui'
 
-const directionLabels: Record<Direction, string> = {
-  up: '上',
-  down: '下',
-  left: '左',
-  right: '右',
+const directionLabels: Record<Direction, { readonly label: string; readonly icon: string }> = {
+  up: { label: '上', icon: '↑' },
+  down: { label: '下', icon: '↓' },
+  left: { label: '左', icon: '←' },
+  right: { label: '右', icon: '→' },
 }
 
 type PlayScreenProps = {
@@ -28,6 +28,16 @@ export function PlayScreen({
   onUndo,
 }: PlayScreenProps) {
   const selectedPiece = state.puzzle.pieces.find((piece) => piece.id === selectedPieceId)
+  const legalDirectionsByPiece = new Map(
+    state.puzzle.pieces.map((piece) => [piece.id, getLegalDirections(state, piece.id)]),
+  )
+  const selectedLegalDirections = selectedPieceId
+    ? (legalDirectionsByPiece.get(selectedPieceId) ?? [])
+    : []
+  const selectedDirectionText =
+    selectedLegalDirections.length > 0
+      ? selectedLegalDirections.map((direction) => directionLabels[direction].label).join('・')
+      : 'なし'
 
   return (
     <main className="screen play-screen">
@@ -41,20 +51,37 @@ export function PlayScreen({
       <p className="lead">{state.puzzle.description}</p>
 
       <div className="play-layout">
-        <BoardView state={state} selectedPieceId={selectedPieceId} onSelectPiece={onSelectPiece} />
+        <BoardView
+          legalDirectionsByPiece={legalDirectionsByPiece}
+          onSelectPiece={onSelectPiece}
+          selectedPieceId={selectedPieceId}
+          state={state}
+        />
         <section className="control-panel" aria-label="操作">
-          <p>選択中: {selectedPiece?.name ?? '駒を選んでください'}</p>
-          <div className="direction-pad">
-            {(Object.keys(directionLabels) as Direction[]).map((direction) => (
-              <button
-                disabled={!selectedPieceId}
-                key={direction}
-                onClick={() => onMove(direction)}
-                type="button"
-              >
-                {directionLabels[direction]}
-              </button>
-            ))}
+          <div className="selection-status" aria-live="polite">
+            <span>選択中</span>
+            <strong>{selectedPiece?.name ?? '駒を選んでください'}</strong>
+            <small>移動可能: {selectedPiece ? selectedDirectionText : '駒を選択してください'}</small>
+          </div>
+          <div className="direction-pad" aria-label="選択中の駒を動かす">
+            {directions.map((direction) => {
+              const isAvailable = selectedLegalDirections.includes(direction)
+
+              return (
+                <button
+                  aria-label={`${directionLabels[direction].label}へ移動`}
+                  className={`direction-button direction-${direction}`}
+                  data-available={isAvailable}
+                  disabled={!selectedPieceId || !isAvailable}
+                  key={direction}
+                  onClick={() => onMove(direction)}
+                  type="button"
+                >
+                  <span>{directionLabels[direction].icon}</span>
+                  <small>{directionLabels[direction].label}</small>
+                </button>
+              )
+            })}
           </div>
           <button disabled={!canUndo} onClick={onUndo} type="button">
             一手戻す
