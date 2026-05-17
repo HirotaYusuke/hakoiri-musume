@@ -1,305 +1,208 @@
-import type { Piece, Puzzle } from '../domain'
+import type { Puzzle } from '../domain'
+import { buildGoalExitSolutionStep, canClearInOneActionFromInitial } from '../domain/engine'
+import {
+  catalogSteps as steps,
+  createGeneratedRectangularPuzzle as createGeneratedPuzzle,
+  createRushHourHardPuzzles,
+  createSeededRectangularPuzzle as createSeededPuzzle,
+  placementLayoutSignature,
+  rectangularPieces,
+  rectangularSolvedPlacements as solvedPlacements,
+} from './scrambleCore'
 
-const musume: Piece = { id: 'musume', name: '娘', width: 2, height: 2, kind: 'goal' }
+/** 標準セットのゴールは縦長1×2（下側EXIT）。下梁で出口列を塞ぎ、初期1操作クリアを禁止する。 */
 
-const board = { width: 4, height: 5 } as const
-const goal = { pieceId: 'musume', x: 1, y: 3 } as const
+const takenPlacementLayouts = new Set<string>()
+const placementSignatureOwners = new Map<string, string>()
 
-export const puzzles: readonly Puzzle[] = [
-  {
-    id: 'intro-first-escape',
-    title: '入門 その一',
-    description: '娘を下へ動かすだけでクリアできる、操作確認用の短い問題です。',
-    difficulty: 'intro',
-    board,
-    goal,
-    pieces: [
-      musume,
-      { id: 'block-left', name: '左番', width: 1, height: 2, kind: 'vertical' },
-      { id: 'block-right', name: '右番', width: 1, height: 2, kind: 'vertical' },
-    ],
-    initialPlacements: [
-      { pieceId: 'block-left', x: 0, y: 0 },
-      { pieceId: 'musume', x: 1, y: 1 },
-      { pieceId: 'block-right', x: 3, y: 0 },
-    ],
-    sampleSolution: [
-      { pieceId: 'musume', direction: 'down' },
-      { pieceId: 'musume', direction: 'down' },
-    ],
-  },
-  {
-    id: 'intro-left-gate',
-    title: '入門 その二',
-    description: '出口の小駒を左へ逃がしてから、娘を下へ進めます。',
-    difficulty: 'intro',
-    board,
-    goal,
-    pieces: [
-      musume,
-      { id: 'koma', name: '小駒', width: 1, height: 1, kind: 'small' },
-      { id: 'guard', name: '番人', width: 1, height: 2, kind: 'vertical' },
-    ],
-    initialPlacements: [
-      { pieceId: 'guard', x: 3, y: 0 },
-      { pieceId: 'musume', x: 1, y: 1 },
-      { pieceId: 'koma', x: 1, y: 3 },
-    ],
-    sampleSolution: [
-      { pieceId: 'koma', direction: 'left', note: '出口を片側へ空けます' },
-      { pieceId: 'musume', direction: 'down' },
-      { pieceId: 'musume', direction: 'down' },
-    ],
-  },
-  {
-    id: 'intro-right-gate',
-    title: '入門 その三',
-    description: '出口の小駒を右へ逃がしてから、娘を下へ進めます。',
-    difficulty: 'intro',
-    board,
-    goal,
-    pieces: [
-      musume,
-      { id: 'koma', name: '小駒', width: 1, height: 1, kind: 'small' },
-      { id: 'guard', name: '番人', width: 1, height: 2, kind: 'vertical' },
-    ],
-    initialPlacements: [
-      { pieceId: 'guard', x: 0, y: 0 },
-      { pieceId: 'musume', x: 1, y: 1 },
-      { pieceId: 'koma', x: 2, y: 3 },
-    ],
-    sampleSolution: [
-      { pieceId: 'koma', direction: 'right', note: '左右どちらに空きがあるかを見ます' },
-      { pieceId: 'musume', direction: 'down' },
-      { pieceId: 'musume', direction: 'down' },
-    ],
-  },
-  {
+function registerPuzzleLayout(puzzle: Puzzle, options?: { readonly allowDuplicate?: boolean }): Puzzle {
+  const signature = placementLayoutSignature(puzzle.initialPlacements)
+
+  if (takenPlacementLayouts.has(signature)) {
+    if (options?.allowDuplicate) {
+      return puzzle
+    }
+
+    throw new Error(
+      `catalog: duplicate initial layout for ${puzzle.id} (matches ${placementSignatureOwners.get(signature)})`,
+    )
+  }
+
+  takenPlacementLayouts.add(signature)
+  placementSignatureOwners.set(signature, puzzle.id)
+  return puzzle
+}
+
+function createSeededPuzzleUnique(
+  params: Parameters<typeof createSeededPuzzle>[0],
+  /** カタログ同期生成のコスト削減（失敗時はシードを手でずらす） */
+  maxAttempts = 600,
+): Puzzle {
+  for (let delta = 0; delta < maxAttempts; delta++) {
+    const candidate = createSeededPuzzle({ ...params, scrambleSeed: params.scrambleSeed + delta })
+    const signature = placementLayoutSignature(candidate.initialPlacements)
+
+    if (takenPlacementLayouts.has(signature)) {
+      continue
+    }
+
+    if (canClearInOneActionFromInitial(candidate)) {
+      continue
+    }
+
+    takenPlacementLayouts.add(signature)
+    placementSignatureOwners.set(signature, params.id)
+    return candidate
+  }
+
+  throw new Error(`catalog: could not find unique layout for ${params.id}`)
+}
+
+const appendExitStep = (puzzle: Puzzle): Puzzle => ({
+  ...puzzle,
+  sampleSolution: [...puzzle.sampleSolution, buildGoalExitSolutionStep(puzzle)],
+})
+
+/**
+ * 手詰まりを避けるため、乱数シードで「解法の逆」となるスクランブル列を取る。
+ * 長いシード列は縦専用・横専用の衝突を何度も解く必要が出やすく、すぐクリアしにくい。
+ */
+const puzzleCatalog: readonly Puzzle[] = [
+  registerPuzzleLayout(
+    createGeneratedPuzzle({
+      id: 'intro-first-escape',
+      difficulty: 'intro',
+      pieces: rectangularPieces,
+      solvedPlacements,
+      scramble: steps(['musume', 'up'], ['bottomBeam', 'left']),
+    }),
+  ),
+  registerPuzzleLayout(
+    createGeneratedPuzzle({
+      id: 'intro-left-gate',
+      difficulty: 'intro',
+      pieces: rectangularPieces,
+      solvedPlacements,
+      scramble: steps(['musume', 'up'], ['bottomBeam', 'left'], ['leftGate', 'down']),
+    }),
+  ),
+  registerPuzzleLayout(
+    createGeneratedPuzzle({
+      id: 'intro-upper-room',
+      difficulty: 'intro',
+      pieces: rectangularPieces,
+      solvedPlacements,
+      scramble: steps(['musume', 'up'], ['bottomBeam', 'left'], ['leftGate', 'down'], ['leftGuard', 'down']),
+    }),
+  ),
+  registerPuzzleLayout(
+    createGeneratedPuzzle({
+      id: 'intro-right-gate',
+      difficulty: 'intro',
+      pieces: rectangularPieces,
+      solvedPlacements,
+      scramble: steps(
+        ['musume', 'up'],
+        ['bottomBeam', 'left'],
+        ['rightGate', 'down'],
+      ),
+    }),
+  ),
+  registerPuzzleLayout(
+    createGeneratedPuzzle({
+      id: 'intro-double-gate',
+      difficulty: 'intro',
+      pieces: rectangularPieces,
+      solvedPlacements,
+      scramble: steps(
+        ['musume', 'up'],
+        ['bottomBeam', 'left'],
+        ['leftGate', 'down'],
+        ['leftGuard', 'down'],
+        ['rightGate', 'down'],
+      ),
+    }),
+  ),
+  createSeededPuzzleUnique({
     id: 'standard-twin-guards',
-    title: '双番の門',
-    description: '左右の番人を上げ、小駒を逃がして出口を開きます。',
     difficulty: 'standard',
-    board,
-    goal,
-    pieces: [
-      musume,
-      { id: 'guard-left', name: '左番', width: 1, height: 2, kind: 'vertical' },
-      { id: 'guard-right', name: '右番', width: 1, height: 2, kind: 'vertical' },
-      { id: 'child-left', name: '小姓左', width: 1, height: 1, kind: 'small' },
-      { id: 'child-right', name: '小姓右', width: 1, height: 1, kind: 'small' },
-    ],
-    initialPlacements: [
-      { pieceId: 'guard-left', x: 0, y: 2 },
-      { pieceId: 'musume', x: 1, y: 1 },
-      { pieceId: 'guard-right', x: 3, y: 2 },
-      { pieceId: 'child-left', x: 1, y: 3 },
-      { pieceId: 'child-right', x: 2, y: 3 },
-    ],
-    sampleSolution: [
-      { pieceId: 'guard-left', direction: 'up' },
-      { pieceId: 'guard-right', direction: 'up' },
-      { pieceId: 'child-left', direction: 'left' },
-      { pieceId: 'child-right', direction: 'right' },
-      { pieceId: 'musume', direction: 'down' },
-      { pieceId: 'musume', direction: 'down' },
-    ],
-  },
-  {
+    pieces: rectangularPieces,
+    solvedPlacements,
+    scrambleLength: 12,
+    scrambleSeed: 18,
+  }),
+  createSeededPuzzleUnique({
     id: 'standard-two-pages',
-    title: '二枚戸',
-    description: '中央の二つの小駒を左右へ開き、娘の通路を作ります。',
     difficulty: 'standard',
-    board,
-    goal,
-    pieces: [
-      musume,
-      { id: 'father', name: '父', width: 1, height: 2, kind: 'vertical' },
-      { id: 'mother', name: '母', width: 1, height: 2, kind: 'vertical' },
-      { id: 'page-left', name: '小姓左', width: 1, height: 1, kind: 'small' },
-      { id: 'page-right', name: '小姓右', width: 1, height: 1, kind: 'small' },
-    ],
-    initialPlacements: [
-      { pieceId: 'father', x: 0, y: 0 },
-      { pieceId: 'musume', x: 1, y: 0 },
-      { pieceId: 'mother', x: 3, y: 0 },
-      { pieceId: 'page-left', x: 1, y: 2 },
-      { pieceId: 'page-right', x: 2, y: 2 },
-    ],
-    sampleSolution: [
-      { pieceId: 'page-left', direction: 'left' },
-      { pieceId: 'page-right', direction: 'right' },
-      { pieceId: 'musume', direction: 'down' },
-      { pieceId: 'musume', direction: 'down' },
-      { pieceId: 'musume', direction: 'down' },
-    ],
-  },
-  {
-    id: 'standard-lower-corridor',
-    title: '下段の廊下',
-    description: '縦駒と小駒を左右へ退避させ、中央の廊下を通します。',
-    difficulty: 'standard',
-    board,
-    goal,
-    pieces: [
-      musume,
-      { id: 'left-block', name: '左番', width: 1, height: 2, kind: 'vertical' },
-      { id: 'right-block', name: '右番', width: 1, height: 2, kind: 'vertical' },
-      { id: 'gate', name: '門番', width: 1, height: 2, kind: 'vertical' },
-      { id: 'scout', name: '斥候', width: 1, height: 1, kind: 'small' },
-    ],
-    initialPlacements: [
-      { pieceId: 'left-block', x: 0, y: 0 },
-      { pieceId: 'musume', x: 1, y: 0 },
-      { pieceId: 'right-block', x: 3, y: 0 },
-      { pieceId: 'gate', x: 1, y: 2 },
-      { pieceId: 'scout', x: 2, y: 2 },
-    ],
-    sampleSolution: [
-      { pieceId: 'gate', direction: 'left' },
-      { pieceId: 'scout', direction: 'right' },
-      { pieceId: 'musume', direction: 'down' },
-      { pieceId: 'musume', direction: 'down' },
-      { pieceId: 'musume', direction: 'down' },
-    ],
-  },
-  {
+    pieces: rectangularPieces,
+    solvedPlacements,
+    scrambleLength: 11,
+    scrambleSeed: 22,
+  }),
+  createSeededPuzzleUnique({
     id: 'standard-side-doors',
-    title: '左右の引き戸',
-    description: '左右の縦駒を下げ、小駒を外へ逃がしてから娘を進めます。',
     difficulty: 'standard',
-    board,
-    goal,
-    pieces: [
-      musume,
-      { id: 'guard-left', name: '左番', width: 1, height: 2, kind: 'vertical' },
-      { id: 'guard-right', name: '右番', width: 1, height: 2, kind: 'vertical' },
-      { id: 'child-left', name: '小姓左', width: 1, height: 1, kind: 'small' },
-      { id: 'child-right', name: '小姓右', width: 1, height: 1, kind: 'small' },
-    ],
-    initialPlacements: [
-      { pieceId: 'musume', x: 1, y: 0 },
-      { pieceId: 'guard-left', x: 0, y: 2 },
-      { pieceId: 'guard-right', x: 3, y: 2 },
-      { pieceId: 'child-left', x: 1, y: 2 },
-      { pieceId: 'child-right', x: 2, y: 2 },
-    ],
-    sampleSolution: [
-      { pieceId: 'guard-left', direction: 'down' },
-      { pieceId: 'guard-right', direction: 'down' },
-      { pieceId: 'child-left', direction: 'left' },
-      { pieceId: 'child-right', direction: 'right' },
-      { pieceId: 'musume', direction: 'down' },
-      { pieceId: 'musume', direction: 'down' },
-      { pieceId: 'musume', direction: 'down' },
-    ],
-  },
-  {
+    pieces: rectangularPieces,
+    solvedPlacements,
+    scrambleLength: 12,
+    scrambleSeed: 34,
+  }),
+  createSeededPuzzleUnique({
     id: 'standard-hakoiri-musume',
-    title: '標準箱入り娘',
-    description: '左右と下段の小駒を順にさばく、MVP向けの標準配置です。',
     difficulty: 'standard',
-    board,
-    goal,
-    pieces: [
-      musume,
-      { id: 'father', name: '父', width: 1, height: 2, kind: 'vertical' },
-      { id: 'mother', name: '母', width: 1, height: 2, kind: 'vertical' },
-      { id: 'scout-left', name: '侍左', width: 1, height: 1, kind: 'small' },
-      { id: 'scout-right', name: '侍右', width: 1, height: 1, kind: 'small' },
-      { id: 'child-left', name: '小姓左', width: 1, height: 1, kind: 'small' },
-      { id: 'child-right', name: '小姓右', width: 1, height: 1, kind: 'small' },
-    ],
-    initialPlacements: [
-      { pieceId: 'father', x: 0, y: 0 },
-      { pieceId: 'musume', x: 1, y: 0 },
-      { pieceId: 'mother', x: 3, y: 0 },
-      { pieceId: 'scout-left', x: 1, y: 2 },
-      { pieceId: 'scout-right', x: 2, y: 2 },
-      { pieceId: 'child-left', x: 1, y: 3 },
-      { pieceId: 'child-right', x: 2, y: 3 },
-    ],
-    sampleSolution: [
-      { pieceId: 'scout-left', direction: 'left' },
-      { pieceId: 'scout-right', direction: 'right' },
-      { pieceId: 'musume', direction: 'down' },
-      { pieceId: 'child-left', direction: 'left' },
-      { pieceId: 'child-right', direction: 'right' },
-      { pieceId: 'musume', direction: 'down' },
-      { pieceId: 'musume', direction: 'down' },
-    ],
-  },
-  {
-    id: 'hard-inner-gate',
-    title: '奥座敷の門',
-    description: '縦駒と小駒の順番を間違えると中央が詰まる、難しめの配置です。',
-    difficulty: 'hard',
-    board,
-    goal,
-    pieces: [
-      musume,
-      { id: 'father', name: '父', width: 1, height: 2, kind: 'vertical' },
-      { id: 'mother', name: '母', width: 1, height: 2, kind: 'vertical' },
-      { id: 'gate', name: '門番', width: 1, height: 2, kind: 'vertical' },
-      { id: 'scout', name: '斥候', width: 1, height: 1, kind: 'small' },
-      { id: 'servant', name: '下女', width: 1, height: 1, kind: 'small' },
-    ],
-    initialPlacements: [
-      { pieceId: 'father', x: 0, y: 0 },
-      { pieceId: 'musume', x: 1, y: 0 },
-      { pieceId: 'mother', x: 3, y: 0 },
-      { pieceId: 'gate', x: 1, y: 2 },
-      { pieceId: 'scout', x: 2, y: 2 },
-      { pieceId: 'servant', x: 2, y: 3 },
-    ],
-    sampleSolution: [
-      { pieceId: 'servant', direction: 'right', note: '先に下段を逃がします' },
-      { pieceId: 'gate', direction: 'left' },
-      { pieceId: 'scout', direction: 'right' },
-      { pieceId: 'musume', direction: 'down' },
-      { pieceId: 'musume', direction: 'down' },
-      { pieceId: 'musume', direction: 'down' },
-    ],
-  },
-  {
-    id: 'hard-crowded-court',
-    title: '詰めの中庭',
-    description: '上段と下段の小駒を分けて逃がす、手順確認向けの難問です。',
-    difficulty: 'hard',
-    board,
-    goal,
-    pieces: [
-      musume,
-      { id: 'father', name: '父', width: 1, height: 2, kind: 'vertical' },
-      { id: 'mother', name: '母', width: 1, height: 2, kind: 'vertical' },
-      { id: 'scout-left', name: '侍左', width: 1, height: 1, kind: 'small' },
-      { id: 'scout-right', name: '侍右', width: 1, height: 1, kind: 'small' },
-      { id: 'servant-left', name: '下女左', width: 1, height: 1, kind: 'small' },
-      { id: 'servant-right', name: '下女右', width: 1, height: 1, kind: 'small' },
-      { id: 'rear-left', name: '奥番左', width: 1, height: 1, kind: 'small' },
-      { id: 'rear-right', name: '奥番右', width: 1, height: 1, kind: 'small' },
-    ],
-    initialPlacements: [
-      { pieceId: 'father', x: 0, y: 0 },
-      { pieceId: 'musume', x: 1, y: 0 },
-      { pieceId: 'mother', x: 3, y: 0 },
-      { pieceId: 'scout-left', x: 1, y: 2 },
-      { pieceId: 'scout-right', x: 2, y: 2 },
-      { pieceId: 'servant-left', x: 1, y: 3 },
-      { pieceId: 'servant-right', x: 2, y: 3 },
-      { pieceId: 'rear-left', x: 0, y: 4 },
-      { pieceId: 'rear-right', x: 3, y: 4 },
-    ],
-    sampleSolution: [
-      { pieceId: 'scout-left', direction: 'left' },
-      { pieceId: 'scout-right', direction: 'right' },
-      { pieceId: 'musume', direction: 'down' },
-      { pieceId: 'servant-left', direction: 'left' },
-      { pieceId: 'servant-right', direction: 'right' },
-      { pieceId: 'musume', direction: 'down' },
-      { pieceId: 'musume', direction: 'down' },
-    ],
-  },
+    pieces: rectangularPieces,
+    solvedPlacements,
+    scrambleLength: 14,
+    scrambleSeed: 52,
+  }),
+  createSeededPuzzleUnique({
+    id: 'standard-crowded-court',
+    difficulty: 'standard',
+    pieces: rectangularPieces,
+    solvedPlacements,
+    scrambleLength: 12,
+    scrambleSeed: 59,
+  }),
+  createSeededPuzzleUnique({
+    id: 'standard-inner-gate',
+    difficulty: 'standard',
+    pieces: rectangularPieces,
+    solvedPlacements,
+    scrambleLength: 13,
+    scrambleSeed: 43,
+  }),
+  createSeededPuzzleUnique({
+    id: 'standard-storeroom-loop',
+    difficulty: 'standard',
+    pieces: rectangularPieces,
+    solvedPlacements,
+    scrambleLength: 11,
+    scrambleSeed: 2,
+  }),
+  createSeededPuzzleUnique({
+    id: 'standard-lower-corridor',
+    difficulty: 'standard',
+    pieces: rectangularPieces,
+    solvedPlacements,
+    scrambleLength: 13,
+    scrambleSeed: 23,
+  }),
+  createSeededPuzzleUnique({
+    id: 'standard-western-slide',
+    difficulty: 'standard',
+    pieces: rectangularPieces,
+    solvedPlacements,
+    scrambleLength: 12,
+    scrambleSeed: 71,
+  }),
+  ...createRushHourHardPuzzles().map((puzzle) => registerPuzzleLayout(puzzle)),
 ]
+
+export const puzzles: readonly Puzzle[] = puzzleCatalog.map(appendExitStep).map((puzzle, index) => ({
+  ...puzzle,
+  title: `問題${index + 1}`,
+  description: '',
+}))
 
 export const findPuzzle = (puzzleId: string): Puzzle | undefined =>
   puzzles.find((puzzle) => puzzle.id === puzzleId)
