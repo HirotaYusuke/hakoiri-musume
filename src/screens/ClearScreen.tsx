@@ -20,7 +20,7 @@ export function ClearScreen({
       </p>
       <div className="action-row">
         <button className="primary-action" onClick={onSelectNext} type="button">
-          次の問題へ
+          別の問題へ
         </button>
         <button onClick={onReplay} type="button">
           もう一度

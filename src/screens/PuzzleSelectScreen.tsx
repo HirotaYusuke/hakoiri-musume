@@ -38,7 +38,6 @@ export function PuzzleSelectScreen({
               {clearedPuzzleIds.includes(puzzle.id) ? 'クリア済み' : '未クリア'}
             </span>
             <strong>{puzzle.title}</strong>
-            <small>{puzzle.description}</small>
           </button>
         ))}
       </div>
