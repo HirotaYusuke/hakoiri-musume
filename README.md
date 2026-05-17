@@ -1,73 +1,60 @@
-# React + TypeScript + Vite
+# Brick Slide Escape
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + TypeScript + Vite で実装したスライドパズルです。赤いターゲットを EXIT まで動かすとクリアになります。
 
-Currently, two official plugins are available:
+## 開発コマンド
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```sh
+npm run dev
+npm test
+npm run build
+npm run lint
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 問題カタログ
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- 問題数は 50 問です。
+- 問題 1-5 は入門、問題 6-14 は標準、問題 15-50 は難問です。
+- 入門・標準は 4x5 の下出口型です。
+- 難問は 6x6 の右出口型で、ラッシュアワー系の横長ターゲットを採用しています。
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+難問は固定データとして [scrambleCore.ts](src/puzzles/scrambleCore.ts) に保持しています。アプリ起動時には全状態探索を実行せず、固定配置と固定サンプル解法をデコードします。
+
+## 難易度検証
+
+カタログ全体の検証は以下で実行します。
+
+```sh
+npx tsx src/scripts/verify-puzzle-catalog.ts
 ```
+
+検証内容の主な観点:
+
+- 50 問構成であること。
+- 初期配置が重複しないこと。
+- 1x1 と 2x2 の駒を含まないこと。
+- サンプル解法でクリアできること。
+- 初期状態から 1 回の連続スライド操作で脱出できないこと。
+- 難問が最低単位手数、操作手数、探索状態数、平均分岐数、スコアの閾値を満たすこと。
+
+通常の `npm test` は高速化のため、難問36問を毎回BFS解析しません。固定メトリクスを使って、期待する難易度条件と問題順を確認します。
+
+固定メトリクスを更新する場合は、次のコマンドでテスト用リテラルを再生成します。
+
+```sh
+npx tsx src/scripts/verify-puzzle-catalog.ts --print-hard-test-metrics
+```
+
+出力を [engine.test.ts](src/domain/engine.test.ts) の `hardPuzzleExpectedMetrics` に反映してください。
+
+## UI確認メモ
+
+問題 15 以降は右側 EXIT へ脱出するため、プレイ画面に右出口型の説明を表示しています。
+
+モバイル幅では、盤面の列数に応じてセルサイズを縮小します。6x6 盤面と右側 EXIT が横スクロールを発生させないことを確認してください。
+
+最低限の手動確認対象:
+
+- 問題 1: 下出口でクリア画面に遷移すること。
+- 問題 15: 右出口型のガイドと EXIT が表示されること。
+- 問題 50: 右出口型の盤面がデスクトップ・モバイル幅で崩れないこと。
