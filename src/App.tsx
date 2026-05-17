@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
 import { createDummyAnalytics } from './analytics'
+import { playBrickImpactSound } from './audio'
 import './App.css'
 import {
   createInitialState,
   isCleared,
-  movePiece,
+  movePieceBySteps,
   undo,
   type Direction,
   type PieceId,
@@ -44,23 +45,25 @@ function App() {
     setRoute('play')
   }
 
-  const handleMove = (direction: Direction) => {
-    if (!puzzleState || !selectedPieceId) {
+  const handlePieceMove = (pieceId: PieceId, direction: Direction, steps = 1) => {
+    if (!puzzleState) {
       return
     }
 
+    setSelectedPieceId(pieceId)
     analytics.track({
       name: 'move_attempted',
       puzzleId: puzzleState.puzzle.id,
-      pieceId: selectedPieceId,
+      pieceId,
     })
 
-    const nextState = movePiece(puzzleState, { pieceId: selectedPieceId, direction })
+    const nextState = movePieceBySteps(puzzleState, { pieceId, direction }, steps)
 
     if (nextState === puzzleState) {
       return
     }
 
+    playBrickImpactSound()
     setPuzzleState(nextState)
 
     if (isCleared(nextState)) {
@@ -79,6 +82,14 @@ function App() {
       setClearResult(result)
       setRoute('clear')
     }
+  }
+
+  const handleMove = (direction: Direction) => {
+    if (!selectedPieceId) {
+      return
+    }
+
+    handlePieceMove(selectedPieceId, direction)
   }
 
   const replay = () => {
@@ -106,6 +117,7 @@ function App() {
           canUndo={puzzleState.history.length > 0}
           onBack={() => setRoute('select')}
           onMove={handleMove}
+          onMovePiece={handlePieceMove}
           onSelectPiece={setSelectedPieceId}
           onUndo={() => setPuzzleState((current) => (current ? undo(current) : current))}
           selectedPieceId={selectedPieceId}

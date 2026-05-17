@@ -1,4 +1,11 @@
-import { directions, getLegalDirections, type Direction, type PieceId, type PuzzleState } from '../domain'
+import {
+  directions,
+  getLegalDirections,
+  tryGoalExitDirection,
+  type Direction,
+  type PieceId,
+  type PuzzleState,
+} from '../domain'
 import { BoardView } from '../ui'
 
 const directionLabels: Record<Direction, { readonly label: string; readonly icon: string }> = {
@@ -14,6 +21,7 @@ type PlayScreenProps = {
   readonly canUndo: boolean
   readonly onBack: () => void
   readonly onMove: (direction: Direction) => void
+  readonly onMovePiece: (pieceId: PieceId, direction: Direction, steps: number) => void
   readonly onSelectPiece: (pieceId: PieceId) => void
   readonly onUndo: () => void
 }
@@ -24,6 +32,7 @@ export function PlayScreen({
   canUndo,
   onBack,
   onMove,
+  onMovePiece,
   onSelectPiece,
   onUndo,
 }: PlayScreenProps) {
@@ -38,6 +47,8 @@ export function PlayScreen({
     selectedLegalDirections.length > 0
       ? selectedLegalDirections.map((direction) => directionLabels[direction].label).join('・')
       : 'なし'
+  const exitDirection = tryGoalExitDirection(state.puzzle)
+  const showsSideExitGuide = exitDirection === 'left' || exitDirection === 'right'
 
   return (
     <main className="screen play-screen">
@@ -48,11 +59,16 @@ export function PlayScreen({
         <p>{state.history.length}手</p>
       </div>
       <h1>{state.puzzle.title}</h1>
-      <p className="lead">{state.puzzle.description}</p>
+      {showsSideExitGuide && (
+        <p className="play-guide">
+          この難問群は右側の EXIT がゴールです。赤いターゲットは横へ、縦長・横長ブロックは形に沿った軸だけへ動きます。
+        </p>
+      )}
 
       <div className="play-layout">
         <BoardView
           legalDirectionsByPiece={legalDirectionsByPiece}
+          onMovePiece={onMovePiece}
           onSelectPiece={onSelectPiece}
           selectedPieceId={selectedPieceId}
           state={state}

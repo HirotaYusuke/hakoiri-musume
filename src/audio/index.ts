@@ -1,0 +1,1 @@
+export { playBrickImpactSound } from './brickImpact'

@@ -16,6 +16,7 @@ export type BoardSize = {
   readonly height: number
 }
 
+/** width×height が 2×2 の駒は定義禁止（検証で弾く）。ゴール含むすべての駒が 1×2 / 2×1 / 1×3 など非正方形か横長・縦長のみ。 */
 export type Piece = {
   readonly id: PieceId
   readonly name: string
