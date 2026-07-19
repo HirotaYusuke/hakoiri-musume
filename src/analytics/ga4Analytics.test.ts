@@ -26,7 +26,14 @@ describe('createGa4Analytics', () => {
 
     analytics.track({ name: 'puzzle_selected', puzzleId: 'intro-first-escape' })
 
-    expect(w.dataLayer?.at(-1)).toEqual(['event', 'puzzle_selected', { puzzleId: 'intro-first-escape' }])
+    // gtag.js が処理できるよう、配列ではなく arguments オブジェクトを push している
+    const last = w.dataLayer?.at(-1)
+
+    expect(Array.from(last as ArrayLike<unknown>)).toEqual([
+      'event',
+      'puzzle_selected',
+      { puzzleId: 'intro-first-escape' },
+    ])
   })
 
   it('2回目の生成では gtag を再初期化しない', () => {
