@@ -13,6 +13,9 @@ export function HomeScreen({ onStart }: HomeScreenProps) {
       <button className="primary-action" onClick={onStart} type="button">
         問題を選ぶ
       </button>
+      <p className="home-footer">
+        <a href="privacy.html">プライバシーポリシー</a>
+      </p>
     </main>
   )
 }

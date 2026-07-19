@@ -517,6 +517,15 @@ button:disabled {
   color: var(--ink-muted);
 }
 
+.home-footer {
+  margin-top: 28px;
+  font-size: 13px;
+}
+
+.home-footer a {
+  color: var(--ink-muted);
+}
+
 .clear-record strong {
   color: var(--accent-deep, inherit);
 }
