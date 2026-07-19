@@ -177,7 +177,7 @@ const rushPuzzleTemplate: Puzzle = {
   sampleSolution: [],
 }
 
-function createRushGraph(actionMode: 'unit' | 'slide'): RushGraph {
+export function createRushGraph(actionMode: 'unit' | 'slide'): RushGraph {
   const startKey = placementLayoutSignature(rushHourSolvedPlacements)
   const nodes = new Map<string, RushGraphNode>([
     [
@@ -298,7 +298,7 @@ function createRushGraph(actionMode: 'unit' | 'slide'): RushGraph {
   return { nodes, distanceToExit, nextStepToExit, exitStepByKey }
 }
 
-function createRushSolution(graph: RushGraph, startKey: string): readonly SolutionStep[] {
+export function createRushSolution(graph: RushGraph, startKey: string): readonly SolutionStep[] {
   const solution: SolutionStep[] = []
   let currentKey = startKey
 
@@ -394,6 +394,26 @@ const rushHourFixedSpecs = [
   ['rush-hard-36', 'musume:2,2 v1:0,3 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:0,1 h2:4,3 h3:4,5', 'v4D h2L h2L h1R h1R v3U h2L v4U h3L v2D v2D v2D musumeR musumeR'],
 ] as const
 
+/**
+ * 追加パック「rush-pack-1」の固定データ。
+ * `npx tsx src/scripts/generate-rush-pack-specs.ts` の出力で、
+ * 本編50問と初期配置が重複しない最深クラス（unit=13〜15）から選定している。
+ */
+const rushPackFixedSpecs = [
+  ['rush-pack1-1', 'musume:0,2 v1:0,3 v2:5,0 v3:1,0 v4:3,2 v5:1,4 h1:2,1 h2:4,3 h3:4,5', 'v4D v4D h2L h2L h2L v4U h3L musumeR v2D v2D v2D musumeR musumeR musumeR'],
+  ['rush-pack1-2', 'musume:2,2 v1:0,2 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:0,1 h2:4,3 h3:3,5', 'h1R h1R v3U musumeR v5U h3L h3L v4D h2L v2D v2D v2D musumeR'],
+  ['rush-pack1-3', 'musume:2,2 v1:0,3 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:0,1 h2:4,3 h3:3,5', 'h1R h1R v3U musumeR v5U h3L h3L v4D h2L v2D v2D v2D musumeR'],
+  ['rush-pack1-4', 'musume:3,2 v1:0,2 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:0,1 h2:4,3 h3:4,5', 'v4D h2L h2L h1R h1R v3U h2L v4U h3L v2D v2D v2D musumeR'],
+  ['rush-pack1-5', 'musume:3,2 v1:0,3 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:0,1 h2:4,3 h3:4,5', 'v4D h2L h2L h1R h1R v3U h2L v4U h3L v2D v2D v2D musumeR'],
+  ['rush-pack1-6', 'musume:2,2 v1:0,0 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:1,1 h2:4,3 h3:4,5', 'v4D h2L h2L h1R v3U h2L v4U h3L v2D v2D v2D musumeR musumeR'],
+  ['rush-pack1-7', 'musume:0,2 v1:0,3 v2:5,0 v3:1,0 v4:3,3 v5:1,4 h1:2,1 h2:4,3 h3:4,5', 'v4D h2L h2L h2L v4U h3L musumeR v2D v2D v2D musumeR musumeR musumeR'],
+  ['rush-pack1-8', 'musume:0,2 v1:0,3 v2:5,0 v3:1,0 v4:3,4 v5:1,3 h1:2,1 h2:4,3 h3:4,5', 'h2L h2L v5D h2L v4U h3L musumeR v2D v2D v2D musumeR musumeR musumeR'],
+  ['rush-pack1-9', 'musume:1,2 v1:0,1 v2:5,0 v3:1,0 v4:3,2 v5:1,4 h1:2,1 h2:4,3 h3:4,5', 'v4D v4D h2L h2L h2L v4U h3L v2D v2D v2D musumeR musumeR musumeR'],
+  ['rush-pack1-10', 'musume:1,2 v1:0,3 v2:5,0 v3:1,0 v4:3,2 v5:1,4 h1:2,1 h2:4,3 h3:4,5', 'v4D v4D h2L h2L h2L v4U h3L v2D v2D v2D musumeR musumeR musumeR'],
+  ['rush-pack1-11', 'musume:3,2 v1:0,2 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:0,1 h2:4,3 h3:3,5', 'h1R h1R v3U v5U h3L h3L v4D h2L v2D v2D v2D musumeR'],
+  ['rush-pack1-12', 'musume:1,2 v1:0,0 v2:5,0 v3:1,0 v4:3,2 v5:1,4 h1:2,1 h2:4,3 h3:3,5', 'v4D musumeR musumeR v5U h3L h3L v4D h2L v2D v2D v2D musumeR'],
+] as const
+
 const compactDirections: Record<string, Direction> = {
   U: 'up',
   D: 'down',
@@ -421,6 +441,20 @@ function parseRushSolution(value: string): readonly SolutionStep[] {
 
 export function createRushHourHardPuzzles(): readonly Puzzle[] {
   return rushHourFixedSpecs.map(([id, placements, solution]) => ({
+    id,
+    title: '',
+    description: '',
+    difficulty: 'hard',
+    board: rushHourBoard,
+    goal: rushHourGoalPlacement,
+    pieces: rushHourPieces,
+    initialPlacements: parseRushPlacements(placements),
+    sampleSolution: parseRushSolution(solution),
+  }))
+}
+
+export function createRushPackPuzzles(): readonly Puzzle[] {
+  return rushPackFixedSpecs.map(([id, placements, solution]) => ({
     id,
     title: '',
     description: '',

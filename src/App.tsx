@@ -16,7 +16,7 @@ import {
   type PuzzleState,
 } from './domain'
 import { InterstitialOverlay, shouldShowInterstitial } from './monetization'
-import { puzzles } from './puzzles'
+import { puzzlePacks, puzzles } from './puzzles'
 import { ClearScreen, HomeScreen, PlayScreen, PuzzleSelectScreen } from './screens'
 import { createLocalStorageRepository, type SaveData } from './storage'
 
@@ -27,7 +27,7 @@ type ClearResult = {
   readonly moveCount: number
 }
 
-const firstPackId = 'rush-pack-1'
+const firstPackId = puzzlePacks[0]!.id
 
 /** 盤面が動くと無効になるよう、問題IDと手数で紐づけたヒント計算結果 */
 type HintState = {
@@ -217,8 +217,9 @@ function App() {
         <PuzzleSelectScreen
           clearedPuzzleIds={saveData.clearedPuzzleIds}
           onBack={() => setRoute('home')}
-          onSelectPack={() => handlePackPurchase(firstPackId)}
+          onPurchasePack={handlePackPurchase}
           onSelectPuzzle={startPuzzle}
+          packs={puzzlePacks}
           purchasedPackIds={saveData.monetization.purchasedPackIds}
           puzzles={puzzles}
         />
