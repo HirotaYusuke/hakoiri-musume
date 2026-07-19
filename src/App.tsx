@@ -15,6 +15,7 @@ import {
   type Puzzle,
   type PuzzleState,
 } from './domain'
+import { InterstitialOverlay, shouldShowInterstitial } from './monetization'
 import { puzzles } from './puzzles'
 import { ClearScreen, HomeScreen, PlayScreen, PuzzleSelectScreen } from './screens'
 import { createLocalStorageRepository, type SaveData } from './storage'
@@ -45,6 +46,8 @@ function App() {
   const [selectedPieceId, setSelectedPieceId] = useState<PieceId | null>(null)
   const [clearResult, setClearResult] = useState<ClearResult | null>(null)
   const [hintState, setHintState] = useState<HintState | null>(null)
+  const [sessionClearCount, setSessionClearCount] = useState(0)
+  const [showsInterstitial, setShowsInterstitial] = useState(false)
 
   const activeHint =
     hintState &&
@@ -103,6 +106,15 @@ function App() {
       persist(nextSaveData)
       setClearResult(result)
       setRoute('clear')
+
+      const nextSessionClearCount = sessionClearCount + 1
+
+      setSessionClearCount(nextSessionClearCount)
+
+      if (shouldShowInterstitial(nextSessionClearCount, saveData.monetization.hasRemovedAds)) {
+        analytics.track({ name: 'ad_interstitial_shown', sessionClearCount: nextSessionClearCount })
+        setShowsInterstitial(true)
+      }
     }
   }
 
@@ -252,6 +264,9 @@ function App() {
           onSelectNext={() => setRoute('select')}
           puzzleTitle={clearResult.puzzle.title}
         />
+      )}
+      {showsInterstitial && !saveData.monetization.hasRemovedAds && (
+        <InterstitialOverlay onClose={() => setShowsInterstitial(false)} />
       )}
     </>
   )

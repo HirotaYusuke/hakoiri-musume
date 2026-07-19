@@ -6,6 +6,7 @@ export type AnalyticsEvent =
   | { readonly name: 'hint_used'; readonly puzzleId: string; readonly usedHintCount: number }
   | { readonly name: 'remove_ads_tapped'; readonly hasRemovedAds: boolean }
   | { readonly name: 'pack_purchase_tapped'; readonly packId: string; readonly purchased: boolean }
+  | { readonly name: 'ad_interstitial_shown'; readonly sessionClearCount: number }
 
 export type AnalyticsPort = {
   readonly track: (event: AnalyticsEvent) => void
