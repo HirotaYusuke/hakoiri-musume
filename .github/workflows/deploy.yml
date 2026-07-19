@@ -28,6 +28,8 @@ jobs:
       - run: npm run build
         env:
           GITHUB_PAGES: 'true'
+          # リポジトリ変数 VITE_GA4_ID（GA4測定ID）が設定されていれば計測が有効になる
+          VITE_GA4_ID: ${{ vars.VITE_GA4_ID }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

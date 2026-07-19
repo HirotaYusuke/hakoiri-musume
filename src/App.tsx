@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { createDummyAnalytics } from './analytics'
+import { createDummyAnalytics, createGa4Analytics } from './analytics'
 import { playBrickImpactSound } from './audio'
 import './App.css'
 import {
@@ -55,7 +55,13 @@ type HintState = {
 
 function App() {
   const storage = useMemo(() => createLocalStorageRepository(), [])
-  const analytics = useMemo(() => createDummyAnalytics(), [])
+  const analytics = useMemo(() => {
+    const ga4Id: unknown = import.meta.env.VITE_GA4_ID
+
+    return typeof ga4Id === 'string' && ga4Id.length > 0
+      ? createGa4Analytics(ga4Id)
+      : createDummyAnalytics()
+  }, [])
   const payments = useMemo(() => createMockPayments(), [])
   const hintSolver = useMemo(() => createHintSolver(), [])
   const [saveData, setSaveData] = useState<SaveData>(() => storage.load())
