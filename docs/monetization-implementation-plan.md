@@ -218,8 +218,11 @@
 - クリア画面に広告削除・追加パック導線を追加した。
 - 問題選択画面に追加パック導線を追加した。
 
-### 次に進める項目
+### Phase 2 / Phase 3（コード側）実装済み
 
-1. ヒント内容を実際の盤面解析から返す。
-2. 広告プレースホルダーを追加し、`hasRemovedAds` で非表示にする。
-3. 追加パックを現行50問とは別の販売単位として定義する。
+- ヒントは BFS（`findNextHintMove`）で現在盤面から最短の次手を計算し、段階式（駒名 → 方向）で表示する。
+- クリア3回ごとにインタースティシャル相当のプレースホルダーを表示し、`hasRemovedAds` で完全非表示にする。
+- 追加パック `rush-pack-1`（検証済み難問12問、本編最難関級以上）を本編と別の販売単位として定義した。
+- 購入は `PaywallDialog` + `PaymentsPort`（モック）経由に統一し、`paywall_shown` / `paywall_dismissed` / `purchase_completed` / `hint_opened` / `ad_interstitial_shown` を計測する。
+
+この時点で「完了条件」はすべて満たしている。残るは実SDK・外部サービスの接続のみで、手順は [launch-checklist.md](launch-checklist.md) を参照。
