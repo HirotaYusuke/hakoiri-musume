@@ -43,7 +43,6 @@ type ClearResult = {
   readonly isNewBest: boolean
 }
 
-const firstPackId = puzzlePacks[0]!.id
 
 /** 盤面が動くと無効になるよう、問題IDと手数で紐づけたヒント計算結果 */
 type HintState = {
@@ -362,12 +361,16 @@ function App() {
       {route === 'clear' && clearResult && (
         <ClearScreen
           bestMoves={clearResult.bestMoves}
-          hasPurchasedPack={saveData.monetization.purchasedPackIds.includes(firstPackId)}
           hasRemovedAds={saveData.monetization.hasRemovedAds}
           isNewBest={clearResult.isNewBest}
           moveCount={clearResult.moveCount}
-          onPurchasePack={() => handlePackPurchase(firstPackId)}
+          onPurchasePack={handlePackPurchase}
           onRemoveAds={handleRemoveAds}
+          packOffer={
+            puzzlePacks.find(
+              (pack) => !saveData.monetization.purchasedPackIds.includes(pack.id),
+            ) ?? null
+          }
           onReplay={replay}
           onSelectNext={() => setRoute('select')}
           optimalMoves={clearResult.optimalMoves}

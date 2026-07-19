@@ -162,6 +162,40 @@ export const rushExSolvedPlacements: readonly PiecePlacement[] = [
   { pieceId: 'v6', x: 4, y: 3 },
 ]
 
+/**
+ * 超難問パック用の12駒テンプレート。ランダム配置探索（レシピE seed=35）で発見した、
+ * 最深 unit=37 / slide=19 の状態空間（12,398状態）を持つ構成。
+ */
+export const rushHardcorePieces: readonly Piece[] = [
+  { id: 'musume', name: '赤いターゲット', width: 2, height: 1, kind: 'goal' },
+  { id: 't1', name: '長縦一', width: 1, height: 3, kind: 'vertical' },
+  { id: 't2', name: '長縦二', width: 1, height: 3, kind: 'vertical' },
+  { id: 'v1', name: '縦一', width: 1, height: 2, kind: 'vertical' },
+  { id: 'v2', name: '縦二', width: 1, height: 2, kind: 'vertical' },
+  { id: 'v3', name: '縦三', width: 1, height: 2, kind: 'vertical' },
+  { id: 'v4', name: '縦四', width: 1, height: 2, kind: 'vertical' },
+  { id: 'v5', name: '縦五', width: 1, height: 2, kind: 'vertical' },
+  { id: 'g1', name: '長横一', width: 3, height: 1, kind: 'horizontal' },
+  { id: 'h1', name: '横一', width: 2, height: 1, kind: 'horizontal' },
+  { id: 'h2', name: '横二', width: 2, height: 1, kind: 'horizontal' },
+  { id: 'h3', name: '横三', width: 2, height: 1, kind: 'horizontal' },
+]
+
+export const rushHardcoreSolvedPlacements: readonly PiecePlacement[] = [
+  { pieceId: 'musume', x: 3, y: 2 },
+  { pieceId: 't1', x: 1, y: 2 },
+  { pieceId: 't2', x: 0, y: 2 },
+  { pieceId: 'v1', x: 5, y: 3 },
+  { pieceId: 'v2', x: 3, y: 0 },
+  { pieceId: 'v3', x: 2, y: 1 },
+  { pieceId: 'v4', x: 5, y: 0 },
+  { pieceId: 'v5', x: 4, y: 0 },
+  { pieceId: 'g1', x: 2, y: 4 },
+  { pieceId: 'h1', x: 1, y: 0 },
+  { pieceId: 'h2', x: 4, y: 5 },
+  { pieceId: 'h3', x: 2, y: 5 },
+]
+
 type RushGraphEdge = {
   readonly to: string
   readonly step: SolutionStep
@@ -450,6 +484,24 @@ const rushPackFixedSpecs = [
   ['rush-pack1-12', 'musume:3,2 v1:0,2 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:0,1 h2:4,3 h3:2,5 v6:4,0', 'musumeL v6D h3R h3R v4D h2L h2L v6D v6D h1R h1R v3U h2L v4U h3L v2D v2D v2D musumeR musumeR'], // unit=21 slide=12
 ] as const
 
+/**
+ * 超難問パック「rush-pack-2」の固定データ（12駒テンプレート、unit=26〜37 / slide=15〜19）。
+ */
+const rushHardcoreFixedSpecs = [
+  ['rush-pack2-1', 'musume:2,2 t1:1,1 t2:0,2 v1:5,4 v2:3,0 v3:2,0 v4:5,1 v5:4,1 g1:1,4 h1:4,0 h2:2,5 h3:0,5', 'h2R h3R v1U h2R h3R g1R t1D t1D musumeL v2D h1L t2D musumeL v3D h1L h1L h1L v5U v3U v2U musumeR musumeR musumeR v4U musumeR'], // unit=26 slide=15
+  ['rush-pack2-2', 'musume:3,2 t1:1,1 t2:0,3 v1:5,4 v2:3,0 v3:2,0 v4:5,1 v5:4,3 g1:1,4 h1:4,0 h2:3,5 h3:1,5', 'v1U h2R h3R musumeL v5U g1R t1D t1D musumeL v2D h1L musumeL v3D h1L h1L h1L v5U v5U v3U v2U musumeR musumeR musumeR v4U musumeR'], // unit=26 slide=16
+  ['rush-pack2-3', 'musume:2,2 t1:1,1 t2:0,1 v1:5,4 v2:3,0 v3:2,0 v4:5,2 v5:4,1 g1:0,4 h1:4,0 h2:3,5 h3:1,5', 'v4U v1U h2R h3R g1R g1R t1D t1D musumeL v2D h1L t2D t2D musumeL v3D h1L h1L h1L v5U v3U v2U musumeR musumeR musumeR v4U musumeR'], // unit=27 slide=16
+  ['rush-pack2-4', 'musume:3,2 t1:1,1 t2:0,2 v1:5,3 v2:3,0 v3:2,1 v4:5,1 v5:4,3 g1:1,4 h1:4,0 h2:3,5 h3:1,5', 'h2R h3R v3U musumeL v5U g1R t1D t1D musumeL v2D h1L t2D musumeL v3D h1L h1L h1L v5U v5U v3U v2U musumeR musumeR musumeR v4U musumeR'], // unit=27 slide=17
+  ['rush-pack2-5', 'musume:2,2 t1:1,1 t2:0,2 v1:5,4 v2:3,0 v3:2,0 v4:5,2 v5:4,3 g1:1,4 h1:4,0 h2:3,5 h3:0,5', 'h3R v4U v1U h2R h3R v5U g1R t1D t1D musumeL v2D h1L t2D musumeL v3D h1L h1L h1L v5U v5U v3U v2U musumeR musumeR musumeR v4U musumeR'], // unit=28 slide=17
+  ['rush-pack2-6', 'musume:3,2 t1:1,1 t2:0,1 v1:5,4 v2:3,0 v3:2,0 v4:5,2 v5:4,3 g1:1,4 h1:4,0 h2:3,5 h3:1,5', 'v4U v1U h2R h3R musumeL v5U g1R t1D t1D musumeL v2D h1L t2D t2D musumeL v3D h1L h1L h1L v5U v5U v3U v2U musumeR musumeR musumeR v4U musumeR'], // unit=29 slide=18
+  ['rush-pack2-7', 'musume:3,2 t1:1,0 t2:0,2 v1:5,4 v2:3,0 v3:2,1 v4:5,2 v5:4,3 g1:1,4 h1:4,0 h2:3,5 h3:1,5', 'v4U v1U h2R h3R v3U musumeL v5U g1R t1D t1D t1D musumeL v2D h1L t2D musumeL v3D h1L h1L h1L v5U v5U v3U v2U musumeR musumeR musumeR v4U musumeR'], // unit=30 slide=19
+  ['rush-pack2-8', 'musume:3,2 t1:1,1 t2:0,2 v1:5,4 v2:3,0 v3:2,1 v4:5,2 v5:4,3 g1:1,4 h1:4,0 h2:2,5 h3:0,5', 'h2R h3R v4U v1U h2R h3R v3U musumeL v5U g1R t1D t1D musumeL v2D h1L t2D musumeL v3D h1L h1L h1L v5U v5U v3U v2U musumeR musumeR musumeR v4U musumeR'], // unit=31 slide=19
+  ['rush-pack2-9', 'musume:3,2 t1:1,1 t2:0,1 v1:5,4 v2:3,0 v3:2,2 v4:5,2 v5:4,3 g1:0,4 h1:4,0 h2:3,5 h3:1,5', 'v4U v1U h2R h3R g1R v3U v3U musumeL v5U g1R t1D t1D musumeL v2D h1L t2D t2D musumeL v3D h1L h1L h1L v5U v5U v3U v2U musumeR musumeR musumeR v4U musumeR'], // unit=32 slide=19
+  ['rush-pack2-10', 'musume:3,2 t1:1,1 t2:0,0 v1:5,4 v2:3,0 v3:2,1 v4:5,2 v5:4,3 g1:0,4 h1:4,0 h2:3,5 h3:0,5', 'h3R v4U v1U h2R h3R g1R v3U musumeL v5U g1R t1D t1D musumeL v2D h1L t2D t2D t2D musumeL v3D h1L h1L h1L v5U v5U v3U v2U musumeR musumeR musumeR v4U musumeR'], // unit=33 slide=19
+  ['rush-pack2-11', 'musume:3,2 t1:1,0 t2:0,1 v1:5,4 v2:3,0 v3:2,1 v4:5,2 v5:4,3 g1:0,4 h1:4,0 h2:2,5 h3:0,5', 'h2R h3R v4U v1U h2R h3R g1R v3U musumeL v5U g1R t1D t1D t1D musumeL v2D h1L t2D t2D musumeL v3D h1L h1L h1L v5U v5U v3U v2U musumeR musumeR musumeR v4U musumeR'], // unit=34 slide=19
+  ['rush-pack2-12', 'musume:3,2 t1:1,0 t2:0,0 v1:5,4 v2:3,0 v3:2,2 v4:5,2 v5:4,4 g1:0,4 h1:4,0 h2:2,5 h3:0,5', 'v5U h2R h3R v4U v1U h2R h3R g1R v3U v3U musumeL v5U g1R t1D t1D t1D musumeL v2D h1L t2D t2D t2D musumeL v3D h1L h1L h1L v5U v5U v3U v2U musumeR musumeR musumeR v4U musumeR'], // unit=37 slide=19
+] as const
+
 const compactDirections: Record<string, Direction> = {
   U: 'up',
   D: 'down',
@@ -498,6 +550,20 @@ export function createRushPackPuzzles(): readonly Puzzle[] {
     board: rushHourBoard,
     goal: rushHourGoalPlacement,
     pieces: rushExPieces,
+    initialPlacements: parseRushPlacements(placements),
+    sampleSolution: parseRushSolution(solution),
+  }))
+}
+
+export function createRushHardcorePuzzles(): readonly Puzzle[] {
+  return rushHardcoreFixedSpecs.map(([id, placements, solution]) => ({
+    id,
+    title: '',
+    description: '',
+    difficulty: 'hard',
+    board: rushHourBoard,
+    goal: rushHourGoalPlacement,
+    pieces: rushHardcorePieces,
     initialPlacements: parseRushPlacements(placements),
     sampleSolution: parseRushSolution(solution),
   }))

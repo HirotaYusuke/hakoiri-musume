@@ -23,6 +23,8 @@ import {
   createRushSolution,
   rushExPieces,
   rushExSolvedPlacements,
+  rushHardcorePieces,
+  rushHardcoreSolvedPlacements,
   rushHourBoard,
   rushHourGoalPlacement,
   rushHourPieces,
@@ -212,9 +214,17 @@ const packTemplate: RushTemplate = {
   solvedPlacements: rushExSolvedPlacements,
 }
 
+const hardcoreTemplate: RushTemplate = {
+  board: rushHourBoard,
+  goal: rushHourGoalPlacement,
+  pieces: rushHardcorePieces,
+  solvedPlacements: rushHardcoreSolvedPlacements,
+}
+
 const mainUnitTargets = [8, 8, 8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 10, 10, 10, 11, 11, 11, 11, 11, 12, 12, 12, 12, 12, 12, 12, 13, 13, 13, 13, 13, 14, 14, 15, 15]
 // 予備込みのターゲット。充足分から深い側の12問を採用する
 const packUnitTargets = [15, 15, 15, 15, 16, 16, 17, 17, 17, 18, 18, 19, 20, 21]
+const hardcoreUnitTargets = [26, 26, 27, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37]
 const packSize = 12
 
 const main = selectFromTemplate({
@@ -229,6 +239,12 @@ const pack = selectFromTemplate({
   unitTargets: packUnitTargets,
   minSolutionEditDistance: 2,
 }).slice(-packSize)
+const hardcore = selectFromTemplate({
+  label: 'hardcore',
+  template: hardcoreTemplate,
+  unitTargets: hardcoreUnitTargets,
+  minSolutionEditDistance: 3,
+}).slice(-packSize)
 
 console.log(`\n本編 ${main.length}問 / パック ${pack.length}問`)
 console.log('\nconst rushHourFixedSpecs = [')
@@ -241,5 +257,10 @@ pack.forEach((candidate, index) =>
   console.log(formatSpec(candidate, `rush-pack1-${index + 1}`, rushExPieces.map((p) => p.id))),
 )
 console.log('] as const')
-console.log(`\nunit分布: main=[${main.map((c) => c.unit).join(',')}] pack=[${pack.map((c) => c.unit).join(',')}]`)
-console.log(`slide分布: main=[${main.map((c) => c.slide).join(',')}] pack=[${pack.map((c) => c.slide).join(',')}]`)
+console.log('\nconst rushHardcoreFixedSpecs = [')
+hardcore.forEach((candidate, index) =>
+  console.log(formatSpec(candidate, `rush-pack2-${index + 1}`, rushHardcorePieces.map((p) => p.id))),
+)
+console.log('] as const')
+console.log(`\nunit分布: main=[${main.map((c) => c.unit).join(',')}] pack=[${pack.map((c) => c.unit).join(',')}] hardcore=[${hardcore.map((c) => c.unit).join(',')}]`)
+console.log(`slide分布: main=[${main.map((c) => c.slide).join(',')}] pack=[${pack.map((c) => c.slide).join(',')}] hardcore=[${hardcore.map((c) => c.slide).join(',')}]`)

@@ -1,6 +1,6 @@
 import type { Puzzle } from '../domain'
 import { buildGoalExitSolutionStep } from '../domain/engine'
-import { createRushPackPuzzles } from './scrambleCore'
+import { createRushHardcorePuzzles, createRushPackPuzzles } from './scrambleCore'
 
 export type PuzzlePack = {
   readonly id: string
@@ -27,6 +27,20 @@ export const puzzlePacks: readonly PuzzlePack[] = [
       .map((puzzle, index) => ({
         ...puzzle,
         title: `EX${index + 1}`,
+        description: '',
+      })),
+  },
+  {
+    id: 'rush-pack-2',
+    title: '超難問パック',
+    description:
+      '12駒の高密度盤面による検証済み超難問12問。最短26〜37手、EXパックのさらに上位帯。',
+    priceLabel: '¥600（予定）',
+    puzzles: createRushHardcorePuzzles()
+      .map(appendExitStep)
+      .map((puzzle, index) => ({
+        ...puzzle,
+        title: `EXX${index + 1}`,
         description: '',
       })),
   },

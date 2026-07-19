@@ -5,9 +5,10 @@ type ClearScreenProps = {
   readonly bestMoves: number
   readonly isNewBest: boolean
   readonly hasRemovedAds: boolean
-  readonly hasPurchasedPack: boolean
+  /** 未購入パックのうち先頭のもの。全部購入済みなら null。 */
+  readonly packOffer: { readonly id: string; readonly title: string } | null
   readonly onRemoveAds: () => void
-  readonly onPurchasePack: () => void
+  readonly onPurchasePack: (packId: string) => void
   readonly onSelectNext: () => void
   readonly onReplay: () => void
 }
@@ -19,7 +20,7 @@ export function ClearScreen({
   bestMoves,
   isNewBest,
   hasRemovedAds,
-  hasPurchasedPack,
+  packOffer,
   onRemoveAds,
   onPurchasePack,
   onSelectNext,
@@ -48,9 +49,11 @@ export function ClearScreen({
         <button disabled={hasRemovedAds} onClick={onRemoveAds} type="button">
           {hasRemovedAds ? '広告削除済み' : '広告削除'}
         </button>
-        <button disabled={hasPurchasedPack} onClick={onPurchasePack} type="button">
-          {hasPurchasedPack ? '追加パック購入済み' : '追加パック'}
-        </button>
+        {packOffer && (
+          <button onClick={() => onPurchasePack(packOffer.id)} type="button">
+            {packOffer.title}
+          </button>
+        )}
       </div>
       <div className="action-row">
         <button className="primary-action" onClick={onSelectNext} type="button">

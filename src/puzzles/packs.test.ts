@@ -11,15 +11,23 @@ import { placementLayoutSignature } from './scrambleCore'
 describe('puzzle packs', () => {
   const packPuzzles = puzzlePacks.flatMap((pack) => pack.puzzles)
 
-  it('rush-pack-1 が12問の難問で構成される', () => {
-    const pack = findPack('rush-pack-1')
+  it('各パックが12問の難問で構成される', () => {
+    for (const packId of ['rush-pack-1', 'rush-pack-2']) {
+      const pack = findPack(packId)
 
-    expect(pack).toBeDefined()
-    expect(pack!.puzzles).toHaveLength(12)
-    pack!.puzzles.forEach((puzzle) => {
-      expect(puzzle.difficulty, puzzle.id).toBe('hard')
-    })
+      expect(pack, packId).toBeDefined()
+      expect(pack!.puzzles, packId).toHaveLength(12)
+      pack!.puzzles.forEach((puzzle) => {
+        expect(puzzle.difficulty, puzzle.id).toBe('hard')
+      })
+    }
   })
+
+  it('超難問パックはEXパックの上位帯（最短26手以上）を持つ', () => {
+    findPack('rush-pack-2')!.puzzles.forEach((puzzle) => {
+      expect(getMinimumMovesToClear(puzzle), puzzle.id).toBeGreaterThanOrEqual(26)
+    })
+  }, 60_000)
 
   it('パック問題はすべて検証を通過する', () => {
     packPuzzles.forEach((puzzle) => {
@@ -42,8 +50,8 @@ describe('puzzle packs', () => {
     })
   })
 
-  it('パック問題は本編の最難関（最短15手）以上の最短手数を持つ', () => {
-    packPuzzles.forEach((puzzle) => {
+  it('EXパックは本編の最難関（最短15手）以上の最短手数を持つ', () => {
+    findPack('rush-pack-1')!.puzzles.forEach((puzzle) => {
       expect(getMinimumMovesToClear(puzzle), puzzle.id).toBeGreaterThanOrEqual(15)
     })
   })
