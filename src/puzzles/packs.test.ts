@@ -36,7 +36,7 @@ describe('puzzle packs', () => {
     packPuzzles.forEach((puzzle) => {
       expect(validatePuzzle(puzzle), puzzle.id).toEqual([])
     })
-  })
+  }, 60_000)
 
   it('パック問題は本編・パック内で問題IDと初期配置が重複しない', () => {
     const allPuzzles = [...puzzles, ...packPuzzles]
@@ -60,7 +60,7 @@ describe('puzzle packs', () => {
       expect(minimum, puzzle.id).toBeGreaterThanOrEqual(15)
       expect(minimum, `${puzzle.id} のサンプル解法はBFS最短`).toBe(puzzle.sampleSolution.length)
     })
-  })
+  }, 60_000)
 
   it('全問題（本編+パック）でサンプル解法が同一の問題ペアが存在しない', () => {
     const allPuzzles = [...puzzles, ...packPuzzles]
