@@ -517,6 +517,12 @@ button:disabled {
   color: var(--ink-muted);
 }
 
+.share-action {
+  width: 100%;
+  color: #fff8e7;
+  background: linear-gradient(180deg, #4c8a4a, #356135);
+}
+
 .home-footer {
   margin-top: 28px;
   font-size: 13px;

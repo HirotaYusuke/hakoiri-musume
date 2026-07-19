@@ -29,6 +29,7 @@ import {
   type Product,
 } from './monetization'
 import { puzzlePacks, puzzles } from './puzzles'
+import { shareResult } from './share'
 import { createHintSolver } from './workers/hintSolver'
 import { ClearScreen, HomeScreen, PlayScreen, PuzzleSelectScreen } from './screens'
 import { createLocalStorageRepository, type SaveData } from './storage'
@@ -337,6 +338,19 @@ function App() {
     startPuzzle(clearResult.puzzle)
   }
 
+  const handleShare = () => {
+    if (!clearResult) {
+      return
+    }
+
+    analytics.track({ name: 'share_tapped', puzzleId: clearResult.puzzle.id })
+    void shareResult({
+      puzzleTitle: clearResult.puzzle.title,
+      moveCount: clearResult.moveCount,
+      optimalMoves: clearResult.optimalMoves,
+    })
+  }
+
   return (
     <>
       {route === 'home' && <HomeScreen onStart={() => setRoute('select')} />}
@@ -399,6 +413,7 @@ function App() {
           }
           onReplay={replay}
           onSelectNext={() => setRoute('select')}
+          onShare={handleShare}
           optimalMoves={clearResult.optimalMoves}
           puzzleTitle={clearResult.puzzle.title}
         />

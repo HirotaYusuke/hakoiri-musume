@@ -11,6 +11,7 @@ type ClearScreenProps = {
   readonly onPurchasePack: (packId: string) => void
   readonly onSelectNext: () => void
   readonly onReplay: () => void
+  readonly onShare: () => void
 }
 
 export function ClearScreen({
@@ -25,6 +26,7 @@ export function ClearScreen({
   onPurchasePack,
   onSelectNext,
   onReplay,
+  onShare,
 }: ClearScreenProps) {
   const isOptimal = moveCount === optimalMoves
 
@@ -55,6 +57,9 @@ export function ClearScreen({
           </button>
         )}
       </div>
+      <button className="share-action" onClick={onShare} type="button">
+        結果をシェアする
+      </button>
       <div className="action-row">
         <button className="primary-action" onClick={onSelectNext} type="button">
           別の問題へ

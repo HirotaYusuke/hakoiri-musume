@@ -18,6 +18,7 @@ export type AnalyticsEvent =
   | { readonly name: 'paywall_shown'; readonly productId: string }
   | { readonly name: 'paywall_dismissed'; readonly productId: string }
   | { readonly name: 'purchase_completed'; readonly productId: string }
+  | { readonly name: 'share_tapped'; readonly puzzleId: string }
 
 export type AnalyticsPort = {
   readonly track: (event: AnalyticsEvent) => void
