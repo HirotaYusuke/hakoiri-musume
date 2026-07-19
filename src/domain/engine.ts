@@ -288,6 +288,16 @@ export const getMinimumMovesToClear = (puzzle: Puzzle, maxVisited = 2_000_000): 
 }
 
 /**
+ * 問題の理論最短単位手数を返す。
+ * 大盤面（6x6難問系）のサンプル解法はBFS最短で生成されており（テストで保証）、
+ * その長さをそのまま使う。小盤面はスクランブル逆順で最短ではないため実測する。
+ */
+export const getOptimalUnitMoves = (puzzle: Puzzle): number =>
+  puzzle.board.width * puzzle.board.height > 30 && puzzle.sampleSolution.length > 0
+    ? puzzle.sampleSolution.length
+    : getMinimumMovesToClear(puzzle)
+
+/**
  * 現在の配置から最短でクリアへ向かうときの最初の単位移動を返す。
  * クリア済み・探索上限超過・到達不能は null（通常プレイで到達できる配置は可逆なので解ける）。
  */

@@ -324,6 +324,14 @@ describe('domain engine', () => {
     expect(findNextHintMove(state)).toBeNull()
   })
 
+  it('難問のサンプル解法はBFS最短手数と一致する（getOptimalUnitMoves の前提）', () => {
+    const hardPuzzles = puzzles.filter((puzzle) => puzzle.difficulty === 'hard')
+
+    hardPuzzleExpectedMetrics.forEach(([id, minUnitMoves], index) => {
+      expect(hardPuzzles[index]?.sampleSolution.length, id).toBe(minUnitMoves)
+    })
+  })
+
   it('問題カタログの問題IDに重複がない', () => {
     const puzzleIds = puzzles.map((puzzle) => puzzle.id)
     expect(new Set(puzzleIds).size).toBe(puzzleIds.length)

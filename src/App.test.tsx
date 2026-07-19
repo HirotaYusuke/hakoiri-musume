@@ -37,6 +37,19 @@ describe('App purchase flow', () => {
     expect(saved.monetization.purchasedPackIds).toEqual(['rush-pack-1'])
   })
 
+  it('ヒントは非同期に計算され、2段階で駒と方向を表示する', async () => {
+    openPuzzleSelect()
+
+    fireEvent.click(screen.getByRole('button', { name: /問題1$/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'ヒントを見る' }))
+
+    expect(await screen.findByText(/次に動かす駒/)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '動かす方向も見る' }))
+
+    expect(await screen.findByText(/「.+」を(上|下|左|右)へ/)).toBeInTheDocument()
+  })
+
   it('paywallをキャンセルすると購入状態は変わらない', () => {
     openPuzzleSelect()
 

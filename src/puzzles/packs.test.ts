@@ -25,7 +25,10 @@ describe('puzzle packs', () => {
 
   it('超難問パックはEXパックの上位帯（最短26手以上）を持つ', () => {
     findPack('rush-pack-2')!.puzzles.forEach((puzzle) => {
-      expect(getMinimumMovesToClear(puzzle), puzzle.id).toBeGreaterThanOrEqual(26)
+      const minimum = getMinimumMovesToClear(puzzle)
+
+      expect(minimum, puzzle.id).toBeGreaterThanOrEqual(26)
+      expect(minimum, `${puzzle.id} のサンプル解法はBFS最短`).toBe(puzzle.sampleSolution.length)
     })
   }, 60_000)
 
@@ -52,7 +55,10 @@ describe('puzzle packs', () => {
 
   it('EXパックは本編の最難関（最短15手）以上の最短手数を持つ', () => {
     findPack('rush-pack-1')!.puzzles.forEach((puzzle) => {
-      expect(getMinimumMovesToClear(puzzle), puzzle.id).toBeGreaterThanOrEqual(15)
+      const minimum = getMinimumMovesToClear(puzzle)
+
+      expect(minimum, puzzle.id).toBeGreaterThanOrEqual(15)
+      expect(minimum, `${puzzle.id} のサンプル解法はBFS最短`).toBe(puzzle.sampleSolution.length)
     })
   })
 

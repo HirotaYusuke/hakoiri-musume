@@ -16,6 +16,7 @@ const directionLabels: Record<Direction, { readonly label: string; readonly icon
 }
 
 export type PlayHint =
+  | { readonly kind: 'computing' }
   | { readonly kind: 'unavailable' }
   | { readonly kind: 'piece'; readonly pieceName: string }
   | { readonly kind: 'move'; readonly pieceName: string; readonly direction: Direction }
@@ -98,6 +99,7 @@ export function PlayScreen({
               type="button"
             >
               {hint === null && 'ヒントを見る'}
+              {hint?.kind === 'computing' && 'ヒントを計算中…'}
               {hint?.kind === 'piece' &&
                 (freeHintsRemaining > 0 ? '動かす方向も見る' : '広告を見て方向を表示')}
               {hint?.kind === 'move' && 'ヒント表示中'}

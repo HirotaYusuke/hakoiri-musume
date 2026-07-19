@@ -1,12 +1,11 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createDummyAnalytics } from './analytics'
 import { playBrickImpactSound } from './audio'
 import './App.css'
 import {
   createInitialState,
-  findNextHintMove,
   getLegalDirections,
-  getMinimumMovesToClear,
+  getOptimalUnitMoves,
   getPiece,
   isCleared,
   movePieceBySteps,
@@ -30,6 +29,7 @@ import {
   type Product,
 } from './monetization'
 import { puzzlePacks, puzzles } from './puzzles'
+import { createHintSolver } from './workers/hintSolver'
 import { ClearScreen, HomeScreen, PlayScreen, PuzzleSelectScreen } from './screens'
 import { createLocalStorageRepository, type SaveData } from './storage'
 
@@ -48,6 +48,7 @@ type ClearResult = {
 type HintState = {
   readonly puzzleId: string
   readonly historyLength: number
+  readonly computing: boolean
   readonly move: Move | null
   readonly revealsDirection: boolean
 }
@@ -56,7 +57,7 @@ function App() {
   const storage = useMemo(() => createLocalStorageRepository(), [])
   const analytics = useMemo(() => createDummyAnalytics(), [])
   const payments = useMemo(() => createMockPayments(), [])
-  const optimalMovesCacheRef = useRef<Map<string, number>>(new Map())
+  const hintSolver = useMemo(() => createHintSolver(), [])
   const [saveData, setSaveData] = useState<SaveData>(() => storage.load())
   const [route, setRoute] = useState<Route>('home')
   const [puzzleState, setPuzzleState] = useState<PuzzleState | null>(null)
@@ -76,6 +77,15 @@ function App() {
     hintState.historyLength === puzzleState.history.length
       ? hintState
       : null
+
+  /* Worker応答時に「まだ同じ盤面か」を判定するための現在位置 */
+  const positionRef = useRef({ puzzleId: '', historyLength: -1 })
+
+  useEffect(() => {
+    positionRef.current = puzzleState
+      ? { puzzleId: puzzleState.puzzle.id, historyLength: puzzleState.history.length }
+      : { puzzleId: '', historyLength: -1 }
+  })
 
   const persist = (nextSaveData: SaveData) => {
     setSaveData(nextSaveData)
@@ -122,11 +132,7 @@ function App() {
     if (isCleared(nextState)) {
       const puzzleId = nextState.puzzle.id
       const moveCount = nextState.history.length
-      const optimalMoves =
-        optimalMovesCacheRef.current.get(puzzleId) ?? getMinimumMovesToClear(nextState.puzzle)
-
-      optimalMovesCacheRef.current.set(puzzleId, optimalMoves)
-
+      const optimalMoves = getOptimalUnitMoves(nextState.puzzle)
       const previousBest = saveData.bestMovesByPuzzleId[puzzleId]
       const isNewBest = previousBest === undefined || moveCount < previousBest
       const bestMoves = isNewBest ? moveCount : previousBest
@@ -198,27 +204,39 @@ function App() {
     }
 
     if (!activeHint) {
-      const move = findNextHintMove(puzzleState)
+      const request = {
+        puzzleId: puzzleState.puzzle.id,
+        historyLength: puzzleState.history.length,
+      }
 
       analytics.track({
         name: 'hint_opened',
-        puzzleId: puzzleState.puzzle.id,
-        moveCount: puzzleState.history.length,
+        puzzleId: request.puzzleId,
+        moveCount: request.historyLength,
       })
-      setHintState({
-        puzzleId: puzzleState.puzzle.id,
-        historyLength: puzzleState.history.length,
-        move,
-        revealsDirection: false,
-      })
+      setHintState({ ...request, computing: true, move: null, revealsDirection: false })
+      void hintSolver.solve(puzzleState.puzzle, puzzleState.placements).then((move) => {
+        setHintState((current) =>
+          current &&
+          current.computing &&
+          current.puzzleId === request.puzzleId &&
+          current.historyLength === request.historyLength
+            ? { ...current, computing: false, move }
+            : current,
+        )
 
-      if (move) {
-        setSelectedPieceId(move.pieceId)
-      }
+        if (
+          move &&
+          positionRef.current.puzzleId === request.puzzleId &&
+          positionRef.current.historyLength === request.historyLength
+        ) {
+          setSelectedPieceId(move.pieceId)
+        }
+      })
       return
     }
 
-    if (!activeHint.move || activeHint.revealsDirection) {
+    if (activeHint.computing || !activeHint.move || activeHint.revealsDirection) {
       return
     }
 
@@ -333,18 +351,20 @@ function App() {
           canUndo={puzzleState.history.length > 0}
           hint={
             activeHint
-              ? activeHint.move
-                ? activeHint.revealsDirection
-                  ? {
-                      kind: 'move',
-                      pieceName: getPiece(puzzleState.puzzle, activeHint.move.pieceId).name,
-                      direction: activeHint.move.direction,
-                    }
-                  : {
-                      kind: 'piece',
-                      pieceName: getPiece(puzzleState.puzzle, activeHint.move.pieceId).name,
-                    }
-                : { kind: 'unavailable' }
+              ? activeHint.computing
+                ? { kind: 'computing' }
+                : activeHint.move
+                  ? activeHint.revealsDirection
+                    ? {
+                        kind: 'move',
+                        pieceName: getPiece(puzzleState.puzzle, activeHint.move.pieceId).name,
+                        direction: activeHint.move.direction,
+                      }
+                    : {
+                        kind: 'piece',
+                        pieceName: getPiece(puzzleState.puzzle, activeHint.move.pieceId).name,
+                      }
+                  : { kind: 'unavailable' }
               : null
           }
           freeHintsRemaining={Math.max(0, freeHintsPerPuzzle - puzzleHintRevealCount)}
