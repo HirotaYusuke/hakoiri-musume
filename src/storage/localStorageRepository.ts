@@ -24,6 +24,19 @@ const parseMonetizationSaveData = (value: unknown): MonetizationSaveData => {
   }
 }
 
+const parseBestMoves = (value: unknown): Record<string, number> => {
+  if (!value || typeof value !== 'object') {
+    return {}
+  }
+
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).filter(
+      (entry): entry is [string, number] =>
+        typeof entry[1] === 'number' && Number.isFinite(entry[1]) && entry[1] > 0,
+    ),
+  )
+}
+
 const parseSaveData = (value: string | null): SaveData => {
   if (!value) {
     return emptySaveData
@@ -38,6 +51,7 @@ const parseSaveData = (value: string | null): SaveData => {
       clearedPuzzleIds: Array.isArray(parsed.clearedPuzzleIds)
         ? parsed.clearedPuzzleIds.filter((id): id is string => typeof id === 'string')
         : [],
+      bestMovesByPuzzleId: parseBestMoves(parsed.bestMovesByPuzzleId),
       monetization: parseMonetizationSaveData(parsed.monetization),
     }
   } catch {

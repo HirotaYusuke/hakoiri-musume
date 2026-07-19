@@ -40,11 +40,27 @@ describe('createLocalStorageRepository', () => {
     expect(createLocalStorageRepository(storage).load()).toEqual({
       selectedPuzzleId: 'puzzle-1',
       clearedPuzzleIds: ['puzzle-1'],
+      bestMovesByPuzzleId: {},
       monetization: {
         hasRemovedAds: false,
         usedHintCount: 0,
         purchasedPackIds: [],
       },
+    })
+  })
+
+  it('自己ベストは正の有限数のみ受け入れる', () => {
+    const storage = new MemoryStorage()
+    storage.setItem(
+      'hakoiri-musume:save',
+      JSON.stringify({
+        clearedPuzzleIds: [],
+        bestMovesByPuzzleId: { 'puzzle-1': 12, 'puzzle-2': -3, 'puzzle-3': 'abc', 'puzzle-4': null },
+      }),
+    )
+
+    expect(createLocalStorageRepository(storage).load().bestMovesByPuzzleId).toEqual({
+      'puzzle-1': 12,
     })
   })
 
@@ -54,6 +70,7 @@ describe('createLocalStorageRepository', () => {
 
     repository.save({
       clearedPuzzleIds: ['puzzle-1'],
+      bestMovesByPuzzleId: { 'puzzle-1': 4 },
       monetization: {
         hasRemovedAds: true,
         usedHintCount: 3,
@@ -64,6 +81,7 @@ describe('createLocalStorageRepository', () => {
 
     expect(repository.load()).toEqual({
       clearedPuzzleIds: ['puzzle-1'],
+      bestMovesByPuzzleId: { 'puzzle-1': 4 },
       monetization: {
         hasRemovedAds: true,
         usedHintCount: 3,

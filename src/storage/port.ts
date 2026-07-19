@@ -1,6 +1,8 @@
 export type SaveData = {
   readonly selectedPuzzleId?: string
   readonly clearedPuzzleIds: readonly string[]
+  /** 問題IDごとの自己ベスト（最少単位移動手数）。端末ローカルのみ。 */
+  readonly bestMovesByPuzzleId: Readonly<Record<string, number>>
   readonly monetization: MonetizationSaveData
 }
 
@@ -19,6 +21,7 @@ export type StoragePort = {
 
 export const emptySaveData: SaveData = {
   clearedPuzzleIds: [],
+  bestMovesByPuzzleId: {},
   monetization: {
     hasRemovedAds: false,
     usedHintCount: 0,

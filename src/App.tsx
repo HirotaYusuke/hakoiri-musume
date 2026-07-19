@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { createDummyAnalytics } from './analytics'
 import { playBrickImpactSound } from './audio'
 import './App.css'
@@ -6,6 +6,7 @@ import {
   createInitialState,
   findNextHintMove,
   getLegalDirections,
+  getMinimumMovesToClear,
   getPiece,
   isCleared,
   movePieceBySteps,
@@ -37,6 +38,9 @@ type Route = 'home' | 'select' | 'play' | 'clear'
 type ClearResult = {
   readonly puzzle: Puzzle
   readonly moveCount: number
+  readonly optimalMoves: number
+  readonly bestMoves: number
+  readonly isNewBest: boolean
 }
 
 const firstPackId = puzzlePacks[0]!.id
@@ -53,6 +57,7 @@ function App() {
   const storage = useMemo(() => createLocalStorageRepository(), [])
   const analytics = useMemo(() => createDummyAnalytics(), [])
   const payments = useMemo(() => createMockPayments(), [])
+  const optimalMovesCacheRef = useRef<Map<string, number>>(new Map())
   const [saveData, setSaveData] = useState<SaveData>(() => storage.load())
   const [route, setRoute] = useState<Route>('home')
   const [puzzleState, setPuzzleState] = useState<PuzzleState | null>(null)
@@ -116,16 +121,29 @@ function App() {
     setPuzzleState(nextState)
 
     if (isCleared(nextState)) {
-      const clearedPuzzleIds = Array.from(
-        new Set([...saveData.clearedPuzzleIds, nextState.puzzle.id]),
-      )
-      const nextSaveData = { ...saveData, clearedPuzzleIds }
-      const result = { puzzle: nextState.puzzle, moveCount: nextState.history.length }
+      const puzzleId = nextState.puzzle.id
+      const moveCount = nextState.history.length
+      const optimalMoves =
+        optimalMovesCacheRef.current.get(puzzleId) ?? getMinimumMovesToClear(nextState.puzzle)
+
+      optimalMovesCacheRef.current.set(puzzleId, optimalMoves)
+
+      const previousBest = saveData.bestMovesByPuzzleId[puzzleId]
+      const isNewBest = previousBest === undefined || moveCount < previousBest
+      const bestMoves = isNewBest ? moveCount : previousBest
+      const clearedPuzzleIds = Array.from(new Set([...saveData.clearedPuzzleIds, puzzleId]))
+      const nextSaveData = {
+        ...saveData,
+        clearedPuzzleIds,
+        bestMovesByPuzzleId: { ...saveData.bestMovesByPuzzleId, [puzzleId]: bestMoves },
+      }
+      const result = { puzzle: nextState.puzzle, moveCount, optimalMoves, bestMoves, isNewBest }
 
       analytics.track({
         name: 'puzzle_cleared',
-        puzzleId: nextState.puzzle.id,
-        moveCount: nextState.history.length,
+        puzzleId,
+        moveCount,
+        optimalMoves,
       })
       persist(nextSaveData)
       setClearResult(result)
@@ -301,6 +319,7 @@ function App() {
       {route === 'home' && <HomeScreen onStart={() => setRoute('select')} />}
       {route === 'select' && (
         <PuzzleSelectScreen
+          bestMovesByPuzzleId={saveData.bestMovesByPuzzleId}
           clearedPuzzleIds={saveData.clearedPuzzleIds}
           onBack={() => setRoute('home')}
           onPurchasePack={handlePackPurchase}
@@ -342,13 +361,16 @@ function App() {
       )}
       {route === 'clear' && clearResult && (
         <ClearScreen
+          bestMoves={clearResult.bestMoves}
           hasPurchasedPack={saveData.monetization.purchasedPackIds.includes(firstPackId)}
           hasRemovedAds={saveData.monetization.hasRemovedAds}
+          isNewBest={clearResult.isNewBest}
           moveCount={clearResult.moveCount}
           onPurchasePack={() => handlePackPurchase(firstPackId)}
           onRemoveAds={handleRemoveAds}
           onReplay={replay}
           onSelectNext={() => setRoute('select')}
+          optimalMoves={clearResult.optimalMoves}
           puzzleTitle={clearResult.puzzle.title}
         />
       )}

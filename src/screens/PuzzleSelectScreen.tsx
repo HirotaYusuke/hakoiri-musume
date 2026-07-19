@@ -11,6 +11,7 @@ type PuzzleSelectScreenProps = {
   readonly puzzles: readonly Puzzle[]
   readonly packs: readonly PuzzlePack[]
   readonly clearedPuzzleIds: readonly string[]
+  readonly bestMovesByPuzzleId: Readonly<Record<string, number>>
   readonly purchasedPackIds: readonly string[]
   readonly onBack: () => void
   readonly onPurchasePack: (packId: string) => void
@@ -20,24 +21,33 @@ type PuzzleSelectScreenProps = {
 function PuzzleList({
   puzzles,
   clearedPuzzleIds,
+  bestMovesByPuzzleId,
   onSelectPuzzle,
-}: Pick<PuzzleSelectScreenProps, 'puzzles' | 'clearedPuzzleIds' | 'onSelectPuzzle'>) {
+}: Pick<
+  PuzzleSelectScreenProps,
+  'puzzles' | 'clearedPuzzleIds' | 'bestMovesByPuzzleId' | 'onSelectPuzzle'
+>) {
   return (
     <div className="puzzle-list">
-      {puzzles.map((puzzle) => (
-        <button
-          className="puzzle-card"
-          key={puzzle.id}
-          onClick={() => onSelectPuzzle(puzzle)}
-          type="button"
-        >
-          <span>
-            {difficultyLabels[puzzle.difficulty]}・
-            {clearedPuzzleIds.includes(puzzle.id) ? 'クリア済み' : '未クリア'}
-          </span>
-          <strong>{puzzle.title}</strong>
-        </button>
-      ))}
+      {puzzles.map((puzzle) => {
+        const best = bestMovesByPuzzleId[puzzle.id]
+
+        return (
+          <button
+            className="puzzle-card"
+            key={puzzle.id}
+            onClick={() => onSelectPuzzle(puzzle)}
+            type="button"
+          >
+            <span>
+              {difficultyLabels[puzzle.difficulty]}・
+              {clearedPuzzleIds.includes(puzzle.id) ? 'クリア済み' : '未クリア'}
+            </span>
+            <strong>{puzzle.title}</strong>
+            {best !== undefined && <small>自己ベスト: {best}手</small>}
+          </button>
+        )
+      })}
     </div>
   )
 }
@@ -46,6 +56,7 @@ export function PuzzleSelectScreen({
   puzzles,
   packs,
   clearedPuzzleIds,
+  bestMovesByPuzzleId,
   purchasedPackIds,
   onBack,
   onPurchasePack,
@@ -82,6 +93,7 @@ export function PuzzleSelectScreen({
           <section aria-label={difficultyLabels[difficulty]} key={difficulty}>
             <h2>{difficultyLabels[difficulty]}</h2>
             <PuzzleList
+              bestMovesByPuzzleId={bestMovesByPuzzleId}
               clearedPuzzleIds={clearedPuzzleIds}
               onSelectPuzzle={onSelectPuzzle}
               puzzles={group}
@@ -95,6 +107,7 @@ export function PuzzleSelectScreen({
           <section aria-label={pack.title} key={pack.id}>
             <h2>{pack.title}</h2>
             <PuzzleList
+              bestMovesByPuzzleId={bestMovesByPuzzleId}
               clearedPuzzleIds={clearedPuzzleIds}
               onSelectPuzzle={onSelectPuzzle}
               puzzles={pack.puzzles}
