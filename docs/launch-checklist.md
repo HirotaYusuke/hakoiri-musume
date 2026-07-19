@@ -20,7 +20,7 @@
 
 - [ ] Web: Google AdSense アカウントを申請する（サイト公開が先に必要）。
 - [ ] アプリ化する場合: AdMob アカウント + インタースティシャル/リワードのユニット作成。
-- [ ] 差し替え点は1か所: `src/monetization/InterstitialOverlay.tsx` の表示タイミングを実広告呼び出しに置換する。表示条件（クリア3回ごと・`hasRemovedAds` で無効）は `src/monetization/ads.ts` にある。
+- [ ] 差し替え点は2か所: `src/monetization/InterstitialOverlay.tsx`（クリア3回ごと・`hasRemovedAds` で無効、条件は `ads.ts`）と `src/monetization/RewardedOverlay.tsx`（ヒント無料3回超過時の解放、条件は `hints.ts`）。リワードは広告削除購入後も残す設計。
 - [ ] 方針を守る: 1問ごとの強制広告なし・失敗時広告なし（business-and-revenue-plan.md）。
 
 ## 4. 決済（広告削除・パック販売）
