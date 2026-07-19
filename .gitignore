@@ -16,6 +16,10 @@ dist-ssr
 .specstory/
 .firecrawl/
 .serena/
+cursor_.md
+
+# 経営・収益計画はローカル管理（公開リポジトリに含めない）
+docs/
 
 # Editor directories and files
 .vscode/*

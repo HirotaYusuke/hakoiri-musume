@@ -30,7 +30,7 @@ npm run lint
 
 - ヒント: プレイ画面でBFSによる最短次手を段階式（駒名 → 方向）に表示します。
 - 広告: クリア3回ごとにプレースホルダーを表示し、広告削除購入で消えます。
-- 購入: 広告削除・追加パックとも paywall モック経由です。実SDK接続手順は [docs/launch-checklist.md](docs/launch-checklist.md) を参照してください。
+- 購入: 広告削除・追加パックとも paywall モック経由です。実SDK接続手順はローカルの `docs/launch-checklist.md`（リポジトリ非公開）を参照してください。
 
 難問は固定データとして [scrambleCore.ts](src/puzzles/scrambleCore.ts) に保持しています。アプリ起動時には全状態探索を実行せず、固定配置と固定サンプル解法をデコードします。
 
