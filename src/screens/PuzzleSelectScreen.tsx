@@ -71,11 +71,24 @@ export function PuzzleSelectScreen({
           </button>
         ),
       )}
-      <PuzzleList
-        clearedPuzzleIds={clearedPuzzleIds}
-        onSelectPuzzle={onSelectPuzzle}
-        puzzles={puzzles}
-      />
+      {(['intro', 'standard', 'hard'] as const).map((difficulty) => {
+        const group = puzzles.filter((puzzle) => puzzle.difficulty === difficulty)
+
+        if (group.length === 0) {
+          return null
+        }
+
+        return (
+          <section aria-label={difficultyLabels[difficulty]} key={difficulty}>
+            <h2>{difficultyLabels[difficulty]}</h2>
+            <PuzzleList
+              clearedPuzzleIds={clearedPuzzleIds}
+              onSelectPuzzle={onSelectPuzzle}
+              puzzles={group}
+            />
+          </section>
+        )
+      })}
       {packs
         .filter((pack) => purchasedPackIds.includes(pack.id))
         .map((pack) => (

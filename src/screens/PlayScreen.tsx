@@ -25,7 +25,7 @@ type PlayScreenProps = {
   readonly selectedPieceId: PieceId | null
   readonly canUndo: boolean
   readonly hint: PlayHint | null
-  readonly usedHintCount: number
+  readonly freeHintsRemaining: number
   readonly onBack: () => void
   readonly onHint: () => void
   readonly onMove: (direction: Direction) => void
@@ -39,7 +39,7 @@ export function PlayScreen({
   selectedPieceId,
   canUndo,
   hint,
-  usedHintCount,
+  freeHintsRemaining,
   onBack,
   onHint,
   onMove,
@@ -97,7 +97,11 @@ export function PlayScreen({
               onClick={onHint}
               type="button"
             >
-              {hint?.kind === 'piece' ? '動かす方向も見る' : 'ヒントを見る'}
+              {hint === null && 'ヒントを見る'}
+              {hint?.kind === 'piece' &&
+                (freeHintsRemaining > 0 ? '動かす方向も見る' : '広告を見て方向を表示')}
+              {hint?.kind === 'move' && 'ヒント表示中'}
+              {hint?.kind === 'unavailable' && 'ヒントを見る'}
             </button>
             {hint?.kind === 'piece' && <small>次に動かす駒: {hint.pieceName}</small>}
             {hint?.kind === 'move' && (
@@ -106,7 +110,11 @@ export function PlayScreen({
               </small>
             )}
             {hint?.kind === 'unavailable' && <small>この配置ではヒントを計算できませんでした</small>}
-            <small>ヒント使用: {usedHintCount}回</small>
+            <small>
+              {freeHintsRemaining > 0
+                ? `無料ヒント残り: ${freeHintsRemaining}回`
+                : '無料ヒントを使い切りました（広告視聴で解放）'}
+            </small>
           </div>
           <div className="direction-pad" aria-label="選択中の駒を動かす">
             {directions.map((direction) => {

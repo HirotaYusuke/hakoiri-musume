@@ -1,5 +1,7 @@
 export * from './ads'
+export * from './hints'
 export * from './InterstitialOverlay'
+export * from './RewardedOverlay'
 export * from './PaywallDialog'
 export * from './paymentsPort'
 export * from './products'

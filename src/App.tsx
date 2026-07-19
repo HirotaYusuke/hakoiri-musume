@@ -5,6 +5,7 @@ import './App.css'
 import {
   createInitialState,
   findNextHintMove,
+  getLegalDirections,
   getPiece,
   isCleared,
   movePieceBySteps,
@@ -16,11 +17,14 @@ import {
   type PuzzleState,
 } from './domain'
 import {
+  canRevealHintFreely,
   createMockPayments,
   findProduct,
+  freeHintsPerPuzzle,
   InterstitialOverlay,
   PaywallDialog,
   removeAdsProduct,
+  RewardedOverlay,
   shouldShowInterstitial,
   type Product,
 } from './monetization'
@@ -58,6 +62,8 @@ function App() {
   const [sessionClearCount, setSessionClearCount] = useState(0)
   const [showsInterstitial, setShowsInterstitial] = useState(false)
   const [paywallProduct, setPaywallProduct] = useState<Product | null>(null)
+  const [puzzleHintRevealCount, setPuzzleHintRevealCount] = useState(0)
+  const [showsRewardedForHint, setShowsRewardedForHint] = useState(false)
 
   const activeHint =
     hintState &&
@@ -73,10 +79,18 @@ function App() {
   }
 
   const startPuzzle = (puzzle: Puzzle) => {
+    const initialState = createInitialState(puzzle)
+    /* 初手から動かせる駒を初期選択にする（ゴール駒は初期状態で動けないことが多い） */
+    const firstMovablePiece =
+      puzzle.pieces.find((piece) => getLegalDirections(initialState, piece.id).length > 0) ??
+      puzzle.pieces[0]
+
     analytics.track({ name: 'puzzle_selected', puzzleId: puzzle.id })
     persist({ ...saveData, selectedPuzzleId: puzzle.id })
-    setPuzzleState(createInitialState(puzzle))
-    setSelectedPieceId(puzzle.pieces[0]?.id ?? null)
+    setPuzzleState(initialState)
+    setSelectedPieceId(firstMovablePiece?.id ?? null)
+    setPuzzleHintRevealCount(0)
+    setShowsRewardedForHint(false)
     setRoute('play')
   }
 
@@ -136,27 +150,8 @@ function App() {
     handlePieceMove(selectedPieceId, direction)
   }
 
-  const handleHint = () => {
-    if (!puzzleState || isCleared(puzzleState)) {
-      return
-    }
-
-    if (!activeHint) {
-      analytics.track({
-        name: 'hint_opened',
-        puzzleId: puzzleState.puzzle.id,
-        moveCount: puzzleState.history.length,
-      })
-      setHintState({
-        puzzleId: puzzleState.puzzle.id,
-        historyLength: puzzleState.history.length,
-        move: findNextHintMove(puzzleState),
-        revealsDirection: false,
-      })
-      return
-    }
-
-    if (!activeHint.move || activeHint.revealsDirection) {
+  const revealHintDirection = () => {
+    if (!puzzleState || !activeHint?.move || activeHint.revealsDirection) {
       return
     }
 
@@ -169,6 +164,7 @@ function App() {
     })
     setHintState({ ...activeHint, revealsDirection: true })
     setSelectedPieceId(activeHint.move.pieceId)
+    setPuzzleHintRevealCount((count) => count + 1)
     persist({
       ...saveData,
       monetization: {
@@ -177,6 +173,45 @@ function App() {
         lastHintAt: new Date().toISOString(),
       },
     })
+  }
+
+  const handleHint = () => {
+    if (!puzzleState || isCleared(puzzleState)) {
+      return
+    }
+
+    if (!activeHint) {
+      const move = findNextHintMove(puzzleState)
+
+      analytics.track({
+        name: 'hint_opened',
+        puzzleId: puzzleState.puzzle.id,
+        moveCount: puzzleState.history.length,
+      })
+      setHintState({
+        puzzleId: puzzleState.puzzle.id,
+        historyLength: puzzleState.history.length,
+        move,
+        revealsDirection: false,
+      })
+
+      if (move) {
+        setSelectedPieceId(move.pieceId)
+      }
+      return
+    }
+
+    if (!activeHint.move || activeHint.revealsDirection) {
+      return
+    }
+
+    if (!canRevealHintFreely(puzzleHintRevealCount)) {
+      analytics.track({ name: 'ad_rewarded_shown', placement: 'hint' })
+      setShowsRewardedForHint(true)
+      return
+    }
+
+    revealHintDirection()
   }
 
   const openPaywall = (product: Product) => {
@@ -294,6 +329,7 @@ function App() {
                 : { kind: 'unavailable' }
               : null
           }
+          freeHintsRemaining={Math.max(0, freeHintsPerPuzzle - puzzleHintRevealCount)}
           onBack={() => setRoute('select')}
           onHint={handleHint}
           onMove={handleMove}
@@ -302,7 +338,6 @@ function App() {
           onUndo={() => setPuzzleState((current) => (current ? undo(current) : current))}
           selectedPieceId={selectedPieceId}
           state={puzzleState}
-          usedHintCount={saveData.monetization.usedHintCount}
         />
       )}
       {route === 'clear' && clearResult && (
@@ -319,6 +354,19 @@ function App() {
       )}
       {showsInterstitial && !saveData.monetization.hasRemovedAds && (
         <InterstitialOverlay onClose={() => setShowsInterstitial(false)} />
+      )}
+      {showsRewardedForHint && (
+        <RewardedOverlay
+          onComplete={() => {
+            analytics.track({ name: 'ad_rewarded_completed', placement: 'hint' })
+            setShowsRewardedForHint(false)
+            revealHintDirection()
+          }}
+          onDismiss={() => {
+            analytics.track({ name: 'ad_rewarded_dismissed', placement: 'hint' })
+            setShowsRewardedForHint(false)
+          }}
+        />
       )}
       {paywallProduct && (
         <PaywallDialog
