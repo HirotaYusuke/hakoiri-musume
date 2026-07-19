@@ -15,7 +15,15 @@ import {
   type Puzzle,
   type PuzzleState,
 } from './domain'
-import { InterstitialOverlay, shouldShowInterstitial } from './monetization'
+import {
+  createMockPayments,
+  findProduct,
+  InterstitialOverlay,
+  PaywallDialog,
+  removeAdsProduct,
+  shouldShowInterstitial,
+  type Product,
+} from './monetization'
 import { puzzlePacks, puzzles } from './puzzles'
 import { ClearScreen, HomeScreen, PlayScreen, PuzzleSelectScreen } from './screens'
 import { createLocalStorageRepository, type SaveData } from './storage'
@@ -40,6 +48,7 @@ type HintState = {
 function App() {
   const storage = useMemo(() => createLocalStorageRepository(), [])
   const analytics = useMemo(() => createDummyAnalytics(), [])
+  const payments = useMemo(() => createMockPayments(), [])
   const [saveData, setSaveData] = useState<SaveData>(() => storage.load())
   const [route, setRoute] = useState<Route>('home')
   const [puzzleState, setPuzzleState] = useState<PuzzleState | null>(null)
@@ -48,6 +57,7 @@ function App() {
   const [hintState, setHintState] = useState<HintState | null>(null)
   const [sessionClearCount, setSessionClearCount] = useState(0)
   const [showsInterstitial, setShowsInterstitial] = useState(false)
+  const [paywallProduct, setPaywallProduct] = useState<Product | null>(null)
 
   const activeHint =
     hintState &&
@@ -169,18 +179,20 @@ function App() {
     })
   }
 
+  const openPaywall = (product: Product) => {
+    analytics.track({ name: 'paywall_shown', productId: product.id })
+    setPaywallProduct(product)
+  }
+
   const handleRemoveAds = () => {
     analytics.track({
       name: 'remove_ads_tapped',
       hasRemovedAds: saveData.monetization.hasRemovedAds,
     })
-    persist({
-      ...saveData,
-      monetization: {
-        ...saveData.monetization,
-        hasRemovedAds: true,
-      },
-    })
+
+    if (!saveData.monetization.hasRemovedAds) {
+      openPaywall(removeAdsProduct)
+    }
   }
 
   const handlePackPurchase = (packId: string) => {
@@ -192,13 +204,52 @@ function App() {
       return
     }
 
+    const product = findProduct(packId)
+
+    if (product) {
+      openPaywall(product)
+    }
+  }
+
+  const applyPurchase = (productId: string) => {
+    if (productId === removeAdsProduct.id) {
+      persist({
+        ...saveData,
+        monetization: { ...saveData.monetization, hasRemovedAds: true },
+      })
+      return
+    }
+
     persist({
       ...saveData,
       monetization: {
         ...saveData.monetization,
-        purchasedPackIds: [...saveData.monetization.purchasedPackIds, packId],
+        purchasedPackIds: [...saveData.monetization.purchasedPackIds, productId],
       },
     })
+  }
+
+  const handlePaywallConfirm = async () => {
+    if (!paywallProduct) {
+      return
+    }
+
+    const result = await payments.purchase(paywallProduct.id)
+
+    if (result.ok) {
+      analytics.track({ name: 'purchase_completed', productId: paywallProduct.id })
+      applyPurchase(paywallProduct.id)
+    }
+
+    setPaywallProduct(null)
+  }
+
+  const handlePaywallDismiss = () => {
+    if (paywallProduct) {
+      analytics.track({ name: 'paywall_dismissed', productId: paywallProduct.id })
+    }
+
+    setPaywallProduct(null)
   }
 
   const replay = () => {
@@ -268,6 +319,15 @@ function App() {
       )}
       {showsInterstitial && !saveData.monetization.hasRemovedAds && (
         <InterstitialOverlay onClose={() => setShowsInterstitial(false)} />
+      )}
+      {paywallProduct && (
+        <PaywallDialog
+          onConfirm={() => {
+            void handlePaywallConfirm()
+          }}
+          onDismiss={handlePaywallDismiss}
+          product={paywallProduct}
+        />
       )}
     </>
   )

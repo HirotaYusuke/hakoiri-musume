@@ -508,6 +508,10 @@ button:disabled {
   color: var(--ink-muted);
 }
 
+.paywall-title {
+  font-size: 22px;
+}
+
 .direction-pad {
   display: grid;
   grid-template-columns: repeat(3, minmax(64px, 1fr));
