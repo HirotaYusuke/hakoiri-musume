@@ -19,7 +19,9 @@ type PlayScreenProps = {
   readonly state: PuzzleState
   readonly selectedPieceId: PieceId | null
   readonly canUndo: boolean
+  readonly usedHintCount: number
   readonly onBack: () => void
+  readonly onHint: () => void
   readonly onMove: (direction: Direction) => void
   readonly onMovePiece: (pieceId: PieceId, direction: Direction, steps: number) => void
   readonly onSelectPiece: (pieceId: PieceId) => void
@@ -30,7 +32,9 @@ export function PlayScreen({
   state,
   selectedPieceId,
   canUndo,
+  usedHintCount,
   onBack,
+  onHint,
   onMove,
   onMovePiece,
   onSelectPiece,
@@ -78,6 +82,12 @@ export function PlayScreen({
             <span>選択中</span>
             <strong>{selectedPiece?.name ?? '駒を選んでください'}</strong>
             <small>移動可能: {selectedPiece ? selectedDirectionText : '駒を選択してください'}</small>
+          </div>
+          <div className="support-panel">
+            <button className="secondary-action" onClick={onHint} type="button">
+              ヒントを見る
+            </button>
+            <small>ヒント使用: {usedHintCount}回</small>
           </div>
           <div className="direction-pad" aria-label="選択中の駒を動かす">
             {directions.map((direction) => {

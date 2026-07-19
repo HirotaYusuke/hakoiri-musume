@@ -84,6 +84,11 @@ button:disabled {
   background: linear-gradient(180deg, var(--accent), var(--accent-deep));
 }
 
+.secondary-action {
+  color: #fff8e7;
+  background: linear-gradient(180deg, #7c5a42, #4c382f);
+}
+
 .text-action {
   border: none;
   box-shadow: none;
@@ -122,6 +127,37 @@ button:disabled {
   color: var(--ink-muted);
   font-size: 15px;
   line-height: 1.6;
+}
+
+.commerce-card {
+  display: grid;
+  width: 100%;
+  gap: 8px;
+  margin-top: 18px;
+  border-radius: 22px;
+  padding: 20px;
+  text-align: left;
+  background:
+    linear-gradient(135deg, rgba(211, 99, 55, 0.18), transparent 48%),
+    rgba(255, 248, 231, 0.82);
+}
+
+.commerce-card span,
+.commerce-card small,
+.commerce-row small,
+.support-panel small {
+  color: var(--ink-muted);
+}
+
+.commerce-card strong {
+  font-size: 22px;
+}
+
+.commerce-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
 }
 
 .play-screen {
@@ -439,6 +475,11 @@ button:disabled {
 
 .selection-status strong {
   font-size: 24px;
+}
+
+.support-panel {
+  display: grid;
+  gap: 6px;
 }
 
 .direction-pad {

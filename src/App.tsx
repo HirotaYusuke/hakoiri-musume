@@ -23,6 +23,8 @@ type ClearResult = {
   readonly moveCount: number
 }
 
+const firstPackId = 'rush-pack-1'
+
 function App() {
   const storage = useMemo(() => createLocalStorageRepository(), [])
   const analytics = useMemo(() => createDummyAnalytics(), [])
@@ -92,6 +94,60 @@ function App() {
     handlePieceMove(selectedPieceId, direction)
   }
 
+  const handleHint = () => {
+    if (!puzzleState) {
+      return
+    }
+
+    const usedHintCount = saveData.monetization.usedHintCount + 1
+
+    analytics.track({
+      name: 'hint_used',
+      puzzleId: puzzleState.puzzle.id,
+      usedHintCount,
+    })
+    persist({
+      ...saveData,
+      monetization: {
+        ...saveData.monetization,
+        usedHintCount,
+        lastHintAt: new Date().toISOString(),
+      },
+    })
+  }
+
+  const handleRemoveAds = () => {
+    analytics.track({
+      name: 'remove_ads_tapped',
+      hasRemovedAds: saveData.monetization.hasRemovedAds,
+    })
+    persist({
+      ...saveData,
+      monetization: {
+        ...saveData.monetization,
+        hasRemovedAds: true,
+      },
+    })
+  }
+
+  const handlePackPurchase = (packId: string) => {
+    const purchased = saveData.monetization.purchasedPackIds.includes(packId)
+
+    analytics.track({ name: 'pack_purchase_tapped', packId, purchased })
+
+    if (purchased) {
+      return
+    }
+
+    persist({
+      ...saveData,
+      monetization: {
+        ...saveData.monetization,
+        purchasedPackIds: [...saveData.monetization.purchasedPackIds, packId],
+      },
+    })
+  }
+
   const replay = () => {
     if (!clearResult) {
       setRoute('select')
@@ -108,7 +164,9 @@ function App() {
         <PuzzleSelectScreen
           clearedPuzzleIds={saveData.clearedPuzzleIds}
           onBack={() => setRoute('home')}
+          onSelectPack={() => handlePackPurchase(firstPackId)}
           onSelectPuzzle={startPuzzle}
+          purchasedPackIds={saveData.monetization.purchasedPackIds}
           puzzles={puzzles}
         />
       )}
@@ -116,17 +174,23 @@ function App() {
         <PlayScreen
           canUndo={puzzleState.history.length > 0}
           onBack={() => setRoute('select')}
+          onHint={handleHint}
           onMove={handleMove}
           onMovePiece={handlePieceMove}
           onSelectPiece={setSelectedPieceId}
           onUndo={() => setPuzzleState((current) => (current ? undo(current) : current))}
           selectedPieceId={selectedPieceId}
           state={puzzleState}
+          usedHintCount={saveData.monetization.usedHintCount}
         />
       )}
       {route === 'clear' && clearResult && (
         <ClearScreen
+          hasPurchasedPack={saveData.monetization.purchasedPackIds.includes(firstPackId)}
+          hasRemovedAds={saveData.monetization.hasRemovedAds}
           moveCount={clearResult.moveCount}
+          onPurchasePack={() => handlePackPurchase(firstPackId)}
+          onRemoveAds={handleRemoveAds}
           onReplay={replay}
           onSelectNext={() => setRoute('select')}
           puzzleTitle={clearResult.puzzle.title}
