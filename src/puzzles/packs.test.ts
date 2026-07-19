@@ -42,9 +42,45 @@ describe('puzzle packs', () => {
     })
   })
 
-  it('パック問題は本編の最難関級以上の最短手数を持つ', () => {
+  it('パック問題は本編の最難関（最短15手）以上の最短手数を持つ', () => {
     packPuzzles.forEach((puzzle) => {
-      expect(getMinimumMovesToClear(puzzle), puzzle.id).toBeGreaterThanOrEqual(13)
+      expect(getMinimumMovesToClear(puzzle), puzzle.id).toBeGreaterThanOrEqual(15)
     })
+  })
+
+  it('全問題（本編+パック）でサンプル解法が同一の問題ペアが存在しない', () => {
+    const allPuzzles = [...puzzles, ...packPuzzles]
+    const solutionKeys = allPuzzles.map((puzzle) =>
+      puzzle.sampleSolution.map((step) => `${step.pieceId}:${step.direction}`).join(' '),
+    )
+
+    expect(new Set(solutionKeys).size).toBe(solutionKeys.length)
+  })
+
+  it('全問題（本編+パック）で初期配置が1駒違いの問題ペアが存在しない', () => {
+    const allPuzzles = [...puzzles, ...packPuzzles]
+
+    for (let i = 0; i < allPuzzles.length; i++) {
+      for (let j = i + 1; j < allPuzzles.length; j++) {
+        const a = allPuzzles[i]!
+        const b = allPuzzles[j]!
+
+        if (a.board.width !== b.board.width || a.pieces.length !== b.pieces.length) {
+          continue
+        }
+
+        // 4x5の入門・標準セットは学習カーブとして意図した派生関係のため対象外
+        if (a.board.width === 4) {
+          continue
+        }
+
+        const bByPiece = new Map(b.initialPlacements.map((p) => [p.pieceId, `${p.x},${p.y}`]))
+        const diff = a.initialPlacements.filter(
+          (p) => bByPiece.get(p.pieceId) !== `${p.x},${p.y}`,
+        ).length
+
+        expect(diff, `${a.id} と ${b.id} が${diff}駒違い`).toBeGreaterThanOrEqual(2)
+      }
+    }
   })
 })

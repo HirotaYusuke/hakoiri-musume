@@ -132,20 +132,20 @@ const puzzleCatalog: readonly Puzzle[] = [
     scrambleSeed: 18,
   }),
   createSeededPuzzleUnique({
-    id: 'standard-two-pages',
-    difficulty: 'standard',
-    pieces: rectangularPieces,
-    solvedPlacements,
-    scrambleLength: 11,
-    scrambleSeed: 22,
-  }),
-  createSeededPuzzleUnique({
     id: 'standard-side-doors',
     difficulty: 'standard',
     pieces: rectangularPieces,
     solvedPlacements,
     scrambleLength: 12,
     scrambleSeed: 34,
+  }),
+  createSeededPuzzleUnique({
+    id: 'standard-two-pages',
+    difficulty: 'standard',
+    pieces: rectangularPieces,
+    solvedPlacements,
+    scrambleLength: 11,
+    scrambleSeed: 14,
   }),
   createSeededPuzzleUnique({
     id: 'standard-hakoiri-musume',

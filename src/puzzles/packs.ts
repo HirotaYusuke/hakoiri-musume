@@ -19,7 +19,8 @@ export const puzzlePacks: readonly PuzzlePack[] = [
   {
     id: 'rush-pack-1',
     title: '難問パック EX',
-    description: '本編の最難関クラス以上だけを集めた、検証済みの追加難問12問。',
+    description:
+      '本編にない10駒構成の検証済み難問12問。全問が本編最難関（最短15手）以上、最深は21手。',
     priceLabel: '¥480（予定）',
     puzzles: createRushPackPuzzles()
       .map(appendExitStep)

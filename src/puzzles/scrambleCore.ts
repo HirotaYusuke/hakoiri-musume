@@ -148,6 +148,20 @@ export const rushHourSolvedPlacements: readonly PiecePlacement[] = [
   { pieceId: 'h3', x: 3, y: 5 },
 ]
 
+/**
+ * 追加パック用の高密度バリアント。基本セットに縦駒を1つ足した10駒構成で、
+ * 本編と初期配置・解法が構造的に重複しない別の状態空間を持つ。
+ */
+export const rushExPieces: readonly Piece[] = [
+  ...rushHourPieces,
+  { id: 'v6', name: '縦六', width: 1, height: 2, kind: 'vertical' },
+]
+
+export const rushExSolvedPlacements: readonly PiecePlacement[] = [
+  ...rushHourSolvedPlacements,
+  { pieceId: 'v6', x: 4, y: 3 },
+]
+
 type RushGraphEdge = {
   readonly to: string
   readonly step: SolutionStep
@@ -177,13 +191,35 @@ const rushPuzzleTemplate: Puzzle = {
   sampleSolution: [],
 }
 
-export function createRushGraph(actionMode: 'unit' | 'slide'): RushGraph {
-  const startKey = placementLayoutSignature(rushHourSolvedPlacements)
+/** 右出口・横長ゴールの盤面テンプレート。solvedPlacements を根に全状態グラフを張る。 */
+export type RushTemplate = Pick<Puzzle, 'board' | 'goal' | 'pieces'> & {
+  readonly solvedPlacements: readonly PiecePlacement[]
+}
+
+const defaultRushTemplate: RushTemplate = {
+  board: rushHourBoard,
+  goal: rushHourGoalPlacement,
+  pieces: rushHourPieces,
+  solvedPlacements: rushHourSolvedPlacements,
+}
+
+export function createRushGraph(
+  actionMode: 'unit' | 'slide',
+  template: RushTemplate = defaultRushTemplate,
+): RushGraph {
+  const templatePuzzle: Puzzle = {
+    ...rushPuzzleTemplate,
+    board: template.board,
+    goal: template.goal,
+    pieces: template.pieces,
+    initialPlacements: template.solvedPlacements,
+  }
+  const startKey = placementLayoutSignature(template.solvedPlacements)
   const nodes = new Map<string, RushGraphNode>([
     [
       startKey,
       {
-        placements: rushHourSolvedPlacements.map((placement) => ({ ...placement })),
+        placements: template.solvedPlacements.map((placement) => ({ ...placement })),
         edges: [],
       },
     ],
@@ -195,12 +231,12 @@ export function createRushGraph(actionMode: 'unit' | 'slide'): RushGraph {
     const key = queue[head++]!
     const node = nodes.get(key)!
     const state: PuzzleState = {
-      puzzle: rushPuzzleTemplate,
+      puzzle: templatePuzzle,
       placements: node.placements.map((placement) => ({ ...placement })),
       history: [],
     }
 
-    for (const piece of rushHourPieces) {
+    for (const piece of template.pieces) {
       for (const direction of getShapeAllowedDirections(piece)) {
         const maxSteps =
           actionMode === 'unit'
@@ -246,7 +282,7 @@ export function createRushGraph(actionMode: 'unit' | 'slide'): RushGraph {
     }
 
     const state: PuzzleState = {
-      puzzle: rushPuzzleTemplate,
+      puzzle: templatePuzzle,
       placements: node.placements.map((placement) => ({ ...placement })),
       history: [],
     }
@@ -356,42 +392,42 @@ const rushDifficultyTargets = [
 ] as const
 
 const rushHourFixedSpecs = [
-  ['rush-hard-1', 'musume:0,2 v1:0,3 v2:5,2 v3:1,0 v4:3,4 v5:1,4 h1:2,1 h2:1,3 h3:4,5', 'v4U h3L musumeR v2D musumeR musumeR musumeR'],
-  ['rush-hard-2', 'musume:2,2 v1:0,2 v2:5,0 v3:1,0 v4:3,4 v5:1,4 h1:2,1 h2:1,3 h3:4,5', 'v4U h3L v2D v2D v2D musumeR musumeR'],
-  ['rush-hard-3', 'musume:2,2 v1:0,2 v2:5,0 v3:1,1 v4:3,3 v5:1,3 h1:2,1 h2:4,3 h3:0,5', 'musumeR v4D h2L v2D v2D v2D musumeR'],
-  ['rush-hard-4', 'musume:2,2 v1:0,2 v2:5,2 v3:1,0 v4:3,4 v5:1,4 h1:3,1 h2:3,3 h3:4,5', 'h2L h2L v4U h3L v2D musumeR musumeR'],
-  ['rush-hard-5', 'musume:3,2 v1:0,0 v2:5,0 v3:1,0 v4:3,4 v5:1,4 h1:2,1 h2:2,3 h3:4,5', 'h2L v4U h3L v2D v2D v2D musumeR'],
-  ['rush-hard-6', 'musume:3,2 v1:0,2 v2:5,0 v3:1,0 v4:3,4 v5:1,4 h1:2,1 h2:3,3 h3:4,5', 'h2L h2L v4U h3L v2D v2D v2D musumeR'],
-  ['rush-hard-7', 'musume:3,2 v1:0,0 v2:5,0 v3:1,0 v4:3,3 v5:1,3 h1:2,1 h2:4,3 h3:3,5', 'h3L h3L v4D h2L v2D v2D v2D musumeR'],
-  ['rush-hard-8', 'musume:0,2 v1:0,3 v2:5,2 v3:1,0 v4:3,4 v5:1,4 h1:2,1 h2:2,3 h3:4,5', 'h2L v4U h3L musumeR v2D musumeR musumeR musumeR'],
-  ['rush-hard-9', 'musume:2,2 v1:0,0 v2:5,1 v3:1,0 v4:3,4 v5:1,4 h1:2,1 h2:3,3 h3:4,5', 'h2L h2L v4U h3L v2D v2D musumeR musumeR'],
-  ['rush-hard-10', 'musume:2,2 v1:0,2 v2:5,0 v3:1,1 v4:3,3 v5:1,3 h1:2,1 h2:4,3 h3:3,5', 'musumeR h3L h3L v4D h2L v2D v2D v2D musumeR'],
-  ['rush-hard-11', 'musume:3,2 v1:0,2 v2:5,0 v3:1,0 v4:3,3 v5:1,3 h1:2,1 h2:4,3 h3:4,5', 'h3L h3L h3L v4D h2L v2D v2D v2D musumeR'],
-  ['rush-hard-12', 'musume:0,2 v1:0,3 v2:5,2 v3:1,0 v4:3,4 v5:1,4 h1:2,1 h2:3,3 h3:4,5', 'h2L h2L v4U h3L musumeR v2D musumeR musumeR musumeR'],
-  ['rush-hard-13', 'musume:1,2 v1:0,1 v2:5,0 v3:1,0 v4:3,3 v5:1,3 h1:2,1 h2:4,3 h3:2,5', 'musumeR musumeR h3L v4D h2L v2D v2D v2D musumeR'],
-  ['rush-hard-14', 'musume:3,2 v1:0,2 v2:5,0 v3:1,1 v4:3,4 v5:1,3 h1:2,1 h2:3,3 h3:4,5', 'h2L v5D h2L v4U h3L v2D v2D v2D musumeR'],
-  ['rush-hard-15', 'musume:0,2 v1:0,3 v2:5,2 v3:1,0 v4:3,4 v5:1,3 h1:3,1 h2:2,3 h3:4,5', 'v5D h2L v4U h3L musumeR v2D musumeR musumeR musumeR'],
-  ['rush-hard-16', 'musume:2,2 v1:0,2 v2:5,0 v3:1,1 v4:3,4 v5:1,3 h1:2,1 h2:2,3 h3:4,5', 'v5D h2L v4U h3L v2D v2D v2D musumeR musumeR'],
-  ['rush-hard-17', 'musume:2,2 v1:0,2 v2:5,1 v3:1,0 v4:3,4 v5:1,3 h1:2,1 h2:3,3 h3:4,5', 'h2L v5D h2L v4U h3L v2D v2D musumeR musumeR'],
-  ['rush-hard-18', 'musume:3,2 v1:0,0 v2:5,0 v3:1,1 v4:3,4 v5:1,3 h1:2,1 h2:4,3 h3:4,5', 'h2L h2L v5D h2L v4U h3L v2D v2D v2D musumeR'],
-  ['rush-hard-19', 'musume:3,2 v1:0,3 v2:5,0 v3:1,2 v4:3,4 v5:1,4 h1:2,1 h2:4,3 h3:4,5', 'h2L h2L v3U h2L v4U h3L v2D v2D v2D musumeR'],
-  ['rush-hard-20', 'musume:2,2 v1:0,0 v2:5,1 v3:1,0 v4:3,4 v5:1,2 h1:2,1 h2:3,3 h3:4,5', 'h2L v5D v5D h2L v4U h3L v2D v2D musumeR musumeR'],
-  ['rush-hard-21', 'musume:1,2 v1:0,2 v2:5,0 v3:1,0 v4:3,3 v5:1,4 h1:2,1 h2:4,3 h3:2,5', 'musumeR musumeR v5U h3L v4D h2L v2D v2D v2D musumeR'],
-  ['rush-hard-22', 'musume:3,2 v1:0,1 v2:5,0 v3:1,1 v4:3,4 v5:1,3 h1:2,1 h2:4,3 h3:4,5', 'h2L h2L v5D h2L v4U h3L v2D v2D v2D musumeR'],
-  ['rush-hard-23', 'musume:1,2 v1:0,0 v2:5,0 v3:1,0 v4:3,4 v5:1,3 h1:2,1 h2:3,3 h3:4,5', 'h2L v5D h2L v4U h3L v2D v2D v2D musumeR musumeR musumeR'],
-  ['rush-hard-24', 'musume:1,2 v1:0,0 v2:5,0 v3:1,0 v4:3,3 v5:1,4 h1:2,1 h2:4,3 h3:3,5', 'musumeR musumeR v5U h3L h3L v4D h2L v2D v2D v2D musumeR'],
-  ['rush-hard-25', 'musume:2,2 v1:0,1 v2:5,0 v3:1,0 v4:3,4 v5:1,2 h1:2,1 h2:4,3 h3:4,5', 'musumeR v4U h3L h3L h3L v4D h2L v2D v2D v2D musumeR'],
-  ['rush-hard-26', 'musume:2,2 v1:0,3 v2:5,0 v3:1,0 v4:3,4 v5:1,2 h1:2,1 h2:4,3 h3:4,5', 'musumeR v4U h3L h3L h3L v4D h2L v2D v2D v2D musumeR'],
-  ['rush-hard-27', 'musume:2,2 v1:0,0 v2:5,0 v3:1,0 v4:3,4 v5:1,2 h1:2,1 h2:3,3 h3:4,5', 'h2L v5D v5D h2L v4U h3L v2D v2D v2D musumeR musumeR'],
-  ['rush-hard-28', 'musume:1,2 v1:0,3 v2:5,0 v3:1,0 v4:3,2 v5:1,4 h1:2,1 h2:4,3 h3:3,5', 'v4D musumeR musumeR v5U h3L h3L v4D h2L v2D v2D v2D musumeR'],
-  ['rush-hard-29', 'musume:1,2 v1:0,1 v2:5,0 v3:1,0 v4:3,4 v5:1,3 h1:2,1 h2:4,3 h3:4,5', 'h2L h2L v5D h2L v4U h3L v2D v2D v2D musumeR musumeR musumeR'],
-  ['rush-hard-30', 'musume:1,2 v1:0,3 v2:5,0 v3:1,0 v4:3,4 v5:1,3 h1:2,1 h2:4,3 h3:4,5', 'h2L h2L v5D h2L v4U h3L v2D v2D v2D musumeR musumeR musumeR'],
-  ['rush-hard-31', 'musume:0,2 v1:0,3 v2:5,0 v3:1,0 v4:3,3 v5:1,4 h1:2,1 h2:4,3 h3:3,5', 'musumeR musumeR musumeR v5U h3L h3L v4D h2L v2D v2D v2D musumeR'],
-  ['rush-hard-32', 'musume:1,2 v1:0,0 v2:5,0 v3:1,0 v4:3,2 v5:1,4 h1:2,1 h2:4,3 h3:4,5', 'v4D v4D h2L h2L h2L v4U h3L v2D v2D v2D musumeR musumeR musumeR'],
-  ['rush-hard-33', 'musume:1,2 v1:0,2 v2:5,0 v3:1,0 v4:3,2 v5:1,4 h1:2,1 h2:4,3 h3:4,5', 'v4D v4D h2L h2L h2L v4U h3L v2D v2D v2D musumeR musumeR musumeR'],
-  ['rush-hard-34', 'musume:0,2 v1:0,3 v2:5,0 v3:1,0 v4:3,2 v5:1,4 h1:2,1 h2:4,3 h3:3,5', 'v4D musumeR musumeR musumeR v5U h3L h3L v4D h2L v2D v2D v2D musumeR'],
-  ['rush-hard-35', 'musume:2,2 v1:0,2 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:0,1 h2:4,3 h3:4,5', 'v4D h2L h2L h1R h1R v3U h2L v4U h3L v2D v2D v2D musumeR musumeR'],
-  ['rush-hard-36', 'musume:2,2 v1:0,3 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:0,1 h2:4,3 h3:4,5', 'v4D h2L h2L h1R h1R v3U h2L v4U h3L v2D v2D v2D musumeR musumeR'],
+  ['rush-hard-1', 'musume:1,2 v1:0,0 v2:5,2 v3:1,0 v4:3,4 v5:1,4 h1:2,1 h2:2,3 h3:4,5', 'h2L v4U h3L v2D musumeR musumeR musumeR'], // unit=8 slide=5
+  ['rush-hard-2', 'musume:2,2 v1:0,0 v2:5,2 v3:1,0 v4:3,4 v5:1,3 h1:2,1 h2:2,3 h3:4,5', 'v5D h2L v4U h3L v2D musumeR musumeR'], // unit=8 slide=6
+  ['rush-hard-3', 'musume:3,2 v1:0,0 v2:5,1 v3:1,2 v4:3,4 v5:1,4 h1:2,1 h2:2,3 h3:4,5', 'v3U h2L v4U h3L v2D v2D musumeR'], // unit=8 slide=6
+  ['rush-hard-4', 'musume:3,2 v1:0,0 v2:5,2 v3:1,0 v4:3,4 v5:1,2 h1:2,1 h2:2,3 h3:4,5', 'v5D v5D h2L v4U h3L v2D musumeR'], // unit=8 slide=6
+  ['rush-hard-5', 'musume:3,2 v1:0,0 v2:5,2 v3:1,2 v4:3,4 v5:1,4 h1:2,1 h2:3,3 h3:4,5', 'h2L v3U h2L v4U h3L v2D musumeR'], // unit=8 slide=6
+  ['rush-hard-6', 'musume:3,2 v1:0,0 v2:5,0 v3:1,1 v4:3,4 v5:1,3 h1:2,1 h2:2,3 h3:4,5', 'v5D h2L v4U h3L v2D v2D v2D musumeR'], // unit=9 slide=6
+  ['rush-hard-7', 'musume:3,2 v1:0,0 v2:5,1 v3:1,0 v4:3,4 v5:1,3 h1:2,1 h2:3,3 h3:4,5', 'h2L v5D h2L v4U h3L v2D v2D musumeR'], // unit=9 slide=6
+  ['rush-hard-8', 'musume:3,2 v1:0,2 v2:5,2 v3:1,2 v4:3,4 v5:1,4 h1:0,1 h2:2,3 h3:4,5', 'h1R h1R v3U h2L v4U h3L v2D musumeR'], // unit=9 slide=7
+  ['rush-hard-9', 'musume:2,2 v1:0,1 v2:5,2 v3:1,2 v4:3,4 v5:1,4 h1:1,1 h2:2,3 h3:4,5', 'h1R v3U h2L v4U h3L v2D musumeR musumeR'], // unit=9 slide=7
+  ['rush-hard-10', 'musume:0,2 v1:0,3 v2:5,2 v3:1,0 v4:3,4 v5:1,3 h1:2,1 h2:2,3 h3:4,5', 'v5D h2L v4U h3L musumeR v2D musumeR musumeR musumeR'], // unit=10 slide=6
+  ['rush-hard-11', 'musume:2,2 v1:0,0 v2:5,1 v3:1,0 v4:3,4 v5:1,2 h1:2,1 h2:2,3 h3:4,5', 'v5D v5D h2L v4U h3L v2D v2D musumeR musumeR'], // unit=10 slide=6
+  ['rush-hard-12', 'musume:1,2 v1:0,0 v2:5,2 v3:1,0 v4:3,4 v5:1,3 h1:2,1 h2:3,3 h3:4,5', 'h2L v5D h2L v4U h3L v2D musumeR musumeR musumeR'], // unit=10 slide=6
+  ['rush-hard-13', 'musume:2,2 v1:0,0 v2:5,1 v3:1,2 v4:3,4 v5:1,4 h1:2,1 h2:3,3 h3:4,5', 'h2L v3U h2L v4U h3L v2D v2D musumeR musumeR'], // unit=10 slide=6
+  ['rush-hard-14', 'musume:2,2 v1:0,1 v2:5,2 v3:1,0 v4:3,4 v5:1,2 h1:2,1 h2:3,3 h3:4,5', 'h2L v5D v5D h2L v4U h3L v2D musumeR musumeR'], // unit=10 slide=6
+  ['rush-hard-15', 'musume:3,2 v1:0,0 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:2,1 h2:4,3 h3:2,5', 'v3U v5U h3L v4D h2L v2D v2D v2D musumeR'], // unit=10 slide=7
+  ['rush-hard-16', 'musume:1,2 v1:0,0 v2:5,0 v3:1,0 v4:3,4 v5:1,3 h1:2,1 h2:2,3 h3:4,5', 'v5D h2L v4U h3L v2D v2D v2D musumeR musumeR musumeR'], // unit=11 slide=6
+  ['rush-hard-17', 'musume:2,2 v1:0,2 v2:5,1 v3:1,2 v4:3,4 v5:1,4 h1:0,1 h2:2,3 h3:4,5', 'h1R h1R v3U h2L v4U h3L v2D v2D musumeR musumeR'], // unit=11 slide=7
+  ['rush-hard-18', 'musume:2,2 v1:0,3 v2:5,2 v3:1,2 v4:3,4 v5:1,4 h1:0,1 h2:3,3 h3:4,5', 'h2L h1R h1R v3U h2L v4U h3L v2D musumeR musumeR'], // unit=11 slide=7
+  ['rush-hard-19', 'musume:2,2 v1:0,0 v2:5,0 v3:1,2 v4:3,4 v5:1,4 h1:1,1 h2:2,3 h3:4,5', 'h1R v3U h2L v4U h3L v2D v2D v2D musumeR musumeR'], // unit=11 slide=7
+  ['rush-hard-20', 'musume:3,2 v1:0,0 v2:5,0 v3:1,2 v4:3,4 v5:1,4 h1:1,1 h2:3,3 h3:4,5', 'h2L h1R v3U h2L v4U h3L v2D v2D v2D musumeR'], // unit=11 slide=7
+  ['rush-hard-21', 'musume:0,2 v1:0,3 v2:5,1 v3:1,0 v4:3,4 v5:1,3 h1:2,1 h2:3,3 h3:4,5', 'h2L v5D h2L v4U h3L musumeR v2D v2D musumeR musumeR musumeR'], // unit=12 slide=6
+  ['rush-hard-22', 'musume:2,2 v1:0,0 v2:5,0 v3:1,0 v4:3,4 v5:1,2 h1:2,1 h2:3,3 h3:4,5', 'h2L v5D v5D h2L v4U h3L v2D v2D v2D musumeR musumeR'], // unit=12 slide=6
+  ['rush-hard-23', 'musume:1,2 v1:0,0 v2:5,0 v3:1,0 v4:3,2 v5:1,4 h1:2,1 h2:4,3 h3:2,5', 'v4D musumeR musumeR v5U h3L v4D h2L v2D v2D v2D musumeR'], // unit=12 slide=6
+  ['rush-hard-24', 'musume:2,2 v1:0,1 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:2,1 h2:4,3 h3:3,5', 'v3U musumeR v5U h3L h3L v4D h2L v2D v2D v2D musumeR'], // unit=12 slide=7
+  ['rush-hard-25', 'musume:3,2 v1:0,2 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:0,1 h2:4,3 h3:2,5', 'h1R h1R v3U v5U h3L v4D h2L v2D v2D v2D musumeR'], // unit=12 slide=8
+  ['rush-hard-26', 'musume:2,2 v1:0,0 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:1,1 h2:4,3 h3:2,5', 'h1R v3U musumeR v5U h3L v4D h2L v2D v2D v2D musumeR'], // unit=12 slide=8
+  ['rush-hard-27', 'musume:3,2 v1:0,1 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:1,1 h2:4,3 h3:3,5', 'h1R v3U v5U h3L h3L v4D h2L v2D v2D v2D musumeR'], // unit=12 slide=8
+  ['rush-hard-28', 'musume:0,2 v1:0,3 v2:5,0 v3:1,0 v4:3,3 v5:1,4 h1:2,1 h2:4,3 h3:3,5', 'musumeR musumeR musumeR v5U h3L h3L v4D h2L v2D v2D v2D musumeR'], // unit=13 slide=6
+  ['rush-hard-29', 'musume:2,2 v1:0,2 v2:5,0 v3:1,2 v4:3,4 v5:1,4 h1:0,1 h2:3,3 h3:4,5', 'h2L h1R h1R v3U h2L v4U h3L v2D v2D v2D musumeR musumeR'], // unit=13 slide=7
+  ['rush-hard-30', 'musume:3,2 v1:0,2 v2:5,0 v3:1,2 v4:3,4 v5:1,4 h1:0,1 h2:4,3 h3:4,5', 'h2L h2L h1R h1R v3U h2L v4U h3L v2D v2D v2D musumeR'], // unit=13 slide=7
+  ['rush-hard-31', 'musume:2,2 v1:0,0 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:2,1 h2:4,3 h3:4,5', 'v4D h2L h2L v3U h2L v4U h3L v2D v2D v2D musumeR musumeR'], // unit=13 slide=7
+  ['rush-hard-32', 'musume:3,2 v1:0,0 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:1,1 h2:4,3 h3:4,5', 'v4D h2L h2L h1R v3U h2L v4U h3L v2D v2D v2D musumeR'], // unit=13 slide=8
+  ['rush-hard-33', 'musume:0,2 v1:0,3 v2:5,0 v3:1,0 v4:3,4 v5:1,3 h1:2,1 h2:4,3 h3:4,5', 'h2L h2L v5D h2L v4U h3L musumeR v2D v2D v2D musumeR musumeR musumeR'], // unit=14 slide=6
+  ['rush-hard-34', 'musume:2,2 v1:0,3 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:0,1 h2:4,3 h3:3,5', 'h1R h1R v3U musumeR v5U h3L h3L v4D h2L v2D v2D v2D musumeR'], // unit=14 slide=8
+  ['rush-hard-35', 'musume:0,2 v1:0,3 v2:5,0 v3:1,0 v4:3,2 v5:1,4 h1:2,1 h2:4,3 h3:4,5', 'v4D v4D h2L h2L h2L v4U h3L musumeR v2D v2D v2D musumeR musumeR musumeR'], // unit=15 slide=6
+  ['rush-hard-36', 'musume:2,2 v1:0,2 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:0,1 h2:4,3 h3:4,5', 'v4D h2L h2L h1R h1R v3U h2L v4U h3L v2D v2D v2D musumeR musumeR'], // unit=15 slide=8
 ] as const
 
 /**
@@ -400,18 +436,18 @@ const rushHourFixedSpecs = [
  * 本編50問と初期配置が重複しない最深クラス（unit=13〜15）から選定している。
  */
 const rushPackFixedSpecs = [
-  ['rush-pack1-1', 'musume:0,2 v1:0,3 v2:5,0 v3:1,0 v4:3,2 v5:1,4 h1:2,1 h2:4,3 h3:4,5', 'v4D v4D h2L h2L h2L v4U h3L musumeR v2D v2D v2D musumeR musumeR musumeR'],
-  ['rush-pack1-2', 'musume:2,2 v1:0,2 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:0,1 h2:4,3 h3:3,5', 'h1R h1R v3U musumeR v5U h3L h3L v4D h2L v2D v2D v2D musumeR'],
-  ['rush-pack1-3', 'musume:2,2 v1:0,3 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:0,1 h2:4,3 h3:3,5', 'h1R h1R v3U musumeR v5U h3L h3L v4D h2L v2D v2D v2D musumeR'],
-  ['rush-pack1-4', 'musume:3,2 v1:0,2 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:0,1 h2:4,3 h3:4,5', 'v4D h2L h2L h1R h1R v3U h2L v4U h3L v2D v2D v2D musumeR'],
-  ['rush-pack1-5', 'musume:3,2 v1:0,3 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:0,1 h2:4,3 h3:4,5', 'v4D h2L h2L h1R h1R v3U h2L v4U h3L v2D v2D v2D musumeR'],
-  ['rush-pack1-6', 'musume:2,2 v1:0,0 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:1,1 h2:4,3 h3:4,5', 'v4D h2L h2L h1R v3U h2L v4U h3L v2D v2D v2D musumeR musumeR'],
-  ['rush-pack1-7', 'musume:0,2 v1:0,3 v2:5,0 v3:1,0 v4:3,3 v5:1,4 h1:2,1 h2:4,3 h3:4,5', 'v4D h2L h2L h2L v4U h3L musumeR v2D v2D v2D musumeR musumeR musumeR'],
-  ['rush-pack1-8', 'musume:0,2 v1:0,3 v2:5,0 v3:1,0 v4:3,4 v5:1,3 h1:2,1 h2:4,3 h3:4,5', 'h2L h2L v5D h2L v4U h3L musumeR v2D v2D v2D musumeR musumeR musumeR'],
-  ['rush-pack1-9', 'musume:1,2 v1:0,1 v2:5,0 v3:1,0 v4:3,2 v5:1,4 h1:2,1 h2:4,3 h3:4,5', 'v4D v4D h2L h2L h2L v4U h3L v2D v2D v2D musumeR musumeR musumeR'],
-  ['rush-pack1-10', 'musume:1,2 v1:0,3 v2:5,0 v3:1,0 v4:3,2 v5:1,4 h1:2,1 h2:4,3 h3:4,5', 'v4D v4D h2L h2L h2L v4U h3L v2D v2D v2D musumeR musumeR musumeR'],
-  ['rush-pack1-11', 'musume:3,2 v1:0,2 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:0,1 h2:4,3 h3:3,5', 'h1R h1R v3U v5U h3L h3L v4D h2L v2D v2D v2D musumeR'],
-  ['rush-pack1-12', 'musume:1,2 v1:0,0 v2:5,0 v3:1,0 v4:3,2 v5:1,4 h1:2,1 h2:4,3 h3:3,5', 'v4D musumeR musumeR v5U h3L h3L v4D h2L v2D v2D v2D musumeR'],
+  ['rush-pack1-1', 'musume:3,2 v1:0,2 v2:5,1 v3:1,2 v4:3,4 v5:1,4 h1:0,1 h2:2,3 h3:4,5 v6:4,0', 'musumeL v6D v6D v6D h1R h1R v3U h2L v4U h3L v2D v2D musumeR musumeR'], // unit=15 slide=9
+  ['rush-pack1-2', 'musume:2,2 v1:0,2 v2:5,1 v3:1,2 v4:3,4 v5:1,4 h1:0,1 h2:3,3 h3:4,5 v6:4,0', 'v6D h2L v6D v6D h1R h1R v3U h2L v4U h3L v2D v2D musumeR musumeR'], // unit=15 slide=9
+  ['rush-pack1-3', 'musume:3,2 v1:0,3 v2:5,2 v3:1,2 v4:3,4 v5:1,4 h1:0,1 h2:3,3 h3:4,5 v6:4,0', 'musumeL v6D h2L v6D v6D h1R h1R v3U h2L v4U h3L v2D musumeR musumeR'], // unit=15 slide=10
+  ['rush-pack1-4', 'musume:3,2 v1:0,0 v2:5,1 v3:1,2 v4:3,4 v5:1,4 h1:1,1 h2:3,3 h3:4,5 v6:4,0', 'musumeL v6D h2L v6D v6D h1R v3U h2L v4U h3L v2D v2D musumeR musumeR'], // unit=15 slide=10
+  ['rush-pack1-5', 'musume:2,2 v1:0,2 v2:5,0 v3:1,2 v4:3,4 v5:1,4 h1:0,1 h2:4,3 h3:4,5 v6:4,1', 'h2L h2L v6D v6D h1R h1R v3U h2L v4U h3L v2D v2D v2D musumeR musumeR'], // unit=16 slide=9
+  ['rush-pack1-6', 'musume:3,2 v1:0,2 v2:5,0 v3:1,2 v4:3,4 v5:1,4 h1:0,1 h2:3,3 h3:4,5 v6:4,0', 'musumeL v6D h2L v6D v6D h1R h1R v3U h2L v4U h3L v2D v2D v2D musumeR musumeR'], // unit=17 slide=10
+  ['rush-pack1-7', 'musume:2,2 v1:0,0 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:1,1 h2:4,3 h3:4,5 v6:4,0', 'v6D v4D h2L h2L v6D v6D h1R v3U h2L v4U h3L v2D v2D v2D musumeR musumeR'], // unit=17 slide=10
+  ['rush-pack1-8', 'musume:3,2 v1:0,0 v2:5,0 v3:1,2 v4:3,4 v5:1,4 h1:1,1 h2:4,3 h3:4,5 v6:4,0', 'musumeL v6D h2L h2L v6D v6D h1R v3U h2L v4U h3L v2D v2D v2D musumeR musumeR'], // unit=17 slide=10
+  ['rush-pack1-9', 'musume:2,2 v1:0,2 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:0,1 h2:4,3 h3:3,5 v6:4,1', 'h3R v4D h2L h2L v6D v6D h1R h1R v3U h2L v4U h3L v2D v2D v2D musumeR musumeR'], // unit=18 slide=11
+  ['rush-pack1-10', 'musume:2,2 v1:0,0 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:1,1 h2:4,3 h3:2,5 v6:4,1', 'h3R h3R v4D h2L h2L v6D v6D h1R v3U h2L v4U h3L v2D v2D v2D musumeR musumeR'], // unit=18 slide=11
+  ['rush-pack1-11', 'musume:3,2 v1:0,0 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:1,1 h2:4,3 h3:3,5 v6:4,0', 'musumeL v6D h3R v4D h2L h2L v6D v6D h1R v3U h2L v4U h3L v2D v2D v2D musumeR musumeR'], // unit=19 slide=12
+  ['rush-pack1-12', 'musume:3,2 v1:0,2 v2:5,0 v3:1,2 v4:3,3 v5:1,4 h1:0,1 h2:4,3 h3:2,5 v6:4,0', 'musumeL v6D h3R h3R v4D h2L h2L v6D v6D h1R h1R v3U h2L v4U h3L v2D v2D v2D musumeR musumeR'], // unit=21 slide=12
 ] as const
 
 const compactDirections: Record<string, Direction> = {
@@ -461,7 +497,7 @@ export function createRushPackPuzzles(): readonly Puzzle[] {
     difficulty: 'hard',
     board: rushHourBoard,
     goal: rushHourGoalPlacement,
-    pieces: rushHourPieces,
+    pieces: rushExPieces,
     initialPlacements: parseRushPlacements(placements),
     sampleSolution: parseRushSolution(solution),
   }))
