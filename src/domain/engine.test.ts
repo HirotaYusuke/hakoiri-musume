@@ -8,7 +8,9 @@ import {
   canClearInOneMoveFromInitial,
   canMove,
   createInitialState,
+  findNextHintMove,
   getLegalDirections,
+  getMinimumMovesToClear,
   getOccupiedCells,
   getShapeAllowedDirections,
   isCleared,
@@ -291,6 +293,35 @@ describe('domain engine', () => {
     if (!limited.solvable) {
       expect(limited.reason).toBe('visitLimit')
     }
+  })
+
+  it('ヒントの次手を繰り返し適用すると最短手数でクリアする', () => {
+    const targets = [firstEscapePuzzle, puzzles.find((puzzle) => puzzle.id === 'rush-hard-1')!]
+
+    targets.forEach((puzzle) => {
+      const minimum = getMinimumMovesToClear(puzzle)
+      let state = createInitialState(puzzle)
+
+      for (let step = 0; step < minimum; step++) {
+        const hint = findNextHintMove(state)
+
+        expect(hint, `${puzzle.title} step ${step + 1}`).not.toBeNull()
+        state = movePiece(state, hint!)
+      }
+
+      expect(isCleared(state), puzzle.title).toBe(true)
+    })
+  })
+
+  it('クリア済みの盤面ではヒントを返さない', () => {
+    let state = createInitialState(firstEscapePuzzle)
+
+    for (const step of firstEscapePuzzle.sampleSolution) {
+      state = movePiece(state, step)
+    }
+
+    expect(isCleared(state)).toBe(true)
+    expect(findNextHintMove(state)).toBeNull()
   })
 
   it('問題カタログの問題IDに重複がない', () => {

@@ -287,6 +287,71 @@ export const getMinimumMovesToClear = (puzzle: Puzzle, maxVisited = 2_000_000): 
   return Infinity
 }
 
+/**
+ * 現在の配置から最短でクリアへ向かうときの最初の単位移動を返す。
+ * クリア済み・探索上限超過・到達不能は null（通常プレイで到達できる配置は可逆なので解ける）。
+ */
+export const findNextHintMove = (state: PuzzleState, maxVisited = 400_000): Move | null => {
+  if (isCleared(state)) {
+    return null
+  }
+
+  const puzzle = state.puzzle
+  const startPlacements = state.placements.map((p) => ({ ...p }))
+  const visited = new Set<string>([encodePlacementsKey(startPlacements)])
+  const queue: { readonly placements: PiecePlacement[]; readonly firstMove: Move | null }[] = [
+    { placements: startPlacements, firstMove: null },
+  ]
+  let head = 0
+
+  while (head < queue.length) {
+    if (visited.size > maxVisited) {
+      return null
+    }
+
+    const { placements, firstMove } = queue[head++]!
+    const currentState: PuzzleState = { puzzle, placements, history: [] }
+
+    for (const piece of puzzle.pieces) {
+      for (const direction of getShapeAllowedDirections(piece)) {
+        const move: Move = { pieceId: piece.id, direction }
+
+        if (!canMove(currentState, move)) {
+          continue
+        }
+
+        const offset = directionOffsets[direction]
+        const nextPlacements = placements.map((placement) =>
+          placement.pieceId === piece.id
+            ? {
+                ...placement,
+                x: placement.x + offset.x,
+                y: placement.y + offset.y,
+              }
+            : placement,
+        )
+        const nextFirstMove = firstMove ?? move
+        const nextState: PuzzleState = { puzzle, placements: nextPlacements, history: [] }
+
+        if (isCleared(nextState)) {
+          return nextFirstMove
+        }
+
+        const key = encodePlacementsKey(nextPlacements)
+
+        if (visited.has(key)) {
+          continue
+        }
+
+        visited.add(key)
+        queue.push({ placements: nextPlacements, firstMove: nextFirstMove })
+      }
+    }
+  }
+
+  return null
+}
+
 const getActionSuccessors = (puzzle: Puzzle, placements: readonly PiecePlacement[]): PiecePlacement[][] => {
   const state: PuzzleState = { puzzle, placements, history: [] }
   const successors: PiecePlacement[][] = []

@@ -4,10 +4,13 @@ import { playBrickImpactSound } from './audio'
 import './App.css'
 import {
   createInitialState,
+  findNextHintMove,
+  getPiece,
   isCleared,
   movePieceBySteps,
   undo,
   type Direction,
+  type Move,
   type PieceId,
   type Puzzle,
   type PuzzleState,
@@ -25,6 +28,14 @@ type ClearResult = {
 
 const firstPackId = 'rush-pack-1'
 
+/** 盤面が動くと無効になるよう、問題IDと手数で紐づけたヒント計算結果 */
+type HintState = {
+  readonly puzzleId: string
+  readonly historyLength: number
+  readonly move: Move | null
+  readonly revealsDirection: boolean
+}
+
 function App() {
   const storage = useMemo(() => createLocalStorageRepository(), [])
   const analytics = useMemo(() => createDummyAnalytics(), [])
@@ -33,6 +44,15 @@ function App() {
   const [puzzleState, setPuzzleState] = useState<PuzzleState | null>(null)
   const [selectedPieceId, setSelectedPieceId] = useState<PieceId | null>(null)
   const [clearResult, setClearResult] = useState<ClearResult | null>(null)
+  const [hintState, setHintState] = useState<HintState | null>(null)
+
+  const activeHint =
+    hintState &&
+    puzzleState &&
+    hintState.puzzleId === puzzleState.puzzle.id &&
+    hintState.historyLength === puzzleState.history.length
+      ? hintState
+      : null
 
   const persist = (nextSaveData: SaveData) => {
     setSaveData(nextSaveData)
@@ -95,7 +115,26 @@ function App() {
   }
 
   const handleHint = () => {
-    if (!puzzleState) {
+    if (!puzzleState || isCleared(puzzleState)) {
+      return
+    }
+
+    if (!activeHint) {
+      analytics.track({
+        name: 'hint_opened',
+        puzzleId: puzzleState.puzzle.id,
+        moveCount: puzzleState.history.length,
+      })
+      setHintState({
+        puzzleId: puzzleState.puzzle.id,
+        historyLength: puzzleState.history.length,
+        move: findNextHintMove(puzzleState),
+        revealsDirection: false,
+      })
+      return
+    }
+
+    if (!activeHint.move || activeHint.revealsDirection) {
       return
     }
 
@@ -106,6 +145,8 @@ function App() {
       puzzleId: puzzleState.puzzle.id,
       usedHintCount,
     })
+    setHintState({ ...activeHint, revealsDirection: true })
+    setSelectedPieceId(activeHint.move.pieceId)
     persist({
       ...saveData,
       monetization: {
@@ -173,6 +214,22 @@ function App() {
       {route === 'play' && puzzleState && (
         <PlayScreen
           canUndo={puzzleState.history.length > 0}
+          hint={
+            activeHint
+              ? activeHint.move
+                ? activeHint.revealsDirection
+                  ? {
+                      kind: 'move',
+                      pieceName: getPiece(puzzleState.puzzle, activeHint.move.pieceId).name,
+                      direction: activeHint.move.direction,
+                    }
+                  : {
+                      kind: 'piece',
+                      pieceName: getPiece(puzzleState.puzzle, activeHint.move.pieceId).name,
+                    }
+                : { kind: 'unavailable' }
+              : null
+          }
           onBack={() => setRoute('select')}
           onHint={handleHint}
           onMove={handleMove}

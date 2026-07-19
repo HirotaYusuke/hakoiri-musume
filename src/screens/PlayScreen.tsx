@@ -15,10 +15,16 @@ const directionLabels: Record<Direction, { readonly label: string; readonly icon
   right: { label: '右', icon: '→' },
 }
 
+export type PlayHint =
+  | { readonly kind: 'unavailable' }
+  | { readonly kind: 'piece'; readonly pieceName: string }
+  | { readonly kind: 'move'; readonly pieceName: string; readonly direction: Direction }
+
 type PlayScreenProps = {
   readonly state: PuzzleState
   readonly selectedPieceId: PieceId | null
   readonly canUndo: boolean
+  readonly hint: PlayHint | null
   readonly usedHintCount: number
   readonly onBack: () => void
   readonly onHint: () => void
@@ -32,6 +38,7 @@ export function PlayScreen({
   state,
   selectedPieceId,
   canUndo,
+  hint,
   usedHintCount,
   onBack,
   onHint,
@@ -83,10 +90,22 @@ export function PlayScreen({
             <strong>{selectedPiece?.name ?? '駒を選んでください'}</strong>
             <small>移動可能: {selectedPiece ? selectedDirectionText : '駒を選択してください'}</small>
           </div>
-          <div className="support-panel">
-            <button className="secondary-action" onClick={onHint} type="button">
-              ヒントを見る
+          <div className="support-panel" aria-live="polite">
+            <button
+              className="secondary-action"
+              disabled={hint !== null && hint.kind !== 'piece'}
+              onClick={onHint}
+              type="button"
+            >
+              {hint?.kind === 'piece' ? '動かす方向も見る' : 'ヒントを見る'}
             </button>
+            {hint?.kind === 'piece' && <small>次に動かす駒: {hint.pieceName}</small>}
+            {hint?.kind === 'move' && (
+              <small>
+                「{hint.pieceName}」を{directionLabels[hint.direction].label}へ
+              </small>
+            )}
+            {hint?.kind === 'unavailable' && <small>この配置ではヒントを計算できませんでした</small>}
             <small>ヒント使用: {usedHintCount}回</small>
           </div>
           <div className="direction-pad" aria-label="選択中の駒を動かす">
