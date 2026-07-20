@@ -1,5 +1,11 @@
-/** 共有時に必ず本番の公開URLへ誘導する（ローカルプレイからの共有でも正しく飛ばす） */
-export const SHARE_URL = 'https://hirotayusuke.github.io/hakoiri-musume/'
+/** 配信中のドメイン・base から公開URLを組み立てる（ホスティング先が変わっても追従する） */
+export const getShareUrl = (): string => {
+  if (typeof window === 'undefined') {
+    return 'https://hirotayusuke.github.io/hakoiri-musume/'
+  }
+
+  return new URL(import.meta.env.BASE_URL, window.location.origin).href
+}
 
 export type ShareResultParams = {
   readonly puzzleTitle: string
@@ -28,11 +34,12 @@ type ShareCapableNavigator = Navigator & {
  */
 export const shareResult = async (params: ShareResultParams): Promise<ShareOutcome> => {
   const text = buildShareText(params)
+  const shareUrl = getShareUrl()
   const nav = navigator as ShareCapableNavigator
 
   if (typeof nav.share === 'function') {
     try {
-      await nav.share({ text, url: SHARE_URL })
+      await nav.share({ text, url: shareUrl })
     } catch {
       // 共有シートのキャンセル等。X へは開かず終了する。
     }
@@ -40,7 +47,7 @@ export const shareResult = async (params: ShareResultParams): Promise<ShareOutco
     return 'shared'
   }
 
-  const intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(SHARE_URL)}`
+  const intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`
 
   window.open(intent, '_blank', 'noopener')
 
