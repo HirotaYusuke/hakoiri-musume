@@ -34,3 +34,10 @@ docs/
 
 # vite-plugin-pwa dev output
 dev-dist
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
