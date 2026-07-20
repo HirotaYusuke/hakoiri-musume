@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { createDummyAnalytics, createGa4Analytics } from './analytics'
+import { createGa4Analytics } from './analytics'
 import { playClearSound, playMoveSound, playWallHitSound, setSoundMuted } from './audio'
 import './App.css'
 import {
@@ -40,9 +40,6 @@ import {
 } from './screens'
 import { createLocalStorageRepository, emptySaveData, type SaveData } from './storage'
 
-/** GA4 測定ID（公開値・秘密ではない）。ビルド時 VITE_GA4_ID があれば上書きされる。 */
-const DEFAULT_GA4_ID = 'G-3HKWFPBD9H'
-
 type Route = 'home' | 'select' | 'play' | 'clear' | 'settings'
 
 type ClearResult = {
@@ -65,15 +62,7 @@ type HintState = {
 
 function App() {
   const storage = useMemo(() => createLocalStorageRepository(), [])
-  const analytics = useMemo(() => {
-    const override: unknown = import.meta.env.VITE_GA4_ID
-    // GA4 測定IDは公開値（ページソースで誰でも参照可能）なので、ホスティング先で
-    // 環境変数を設定できない場合でも計測が動くよう既定値を埋め込む。
-    // ビルド時に VITE_GA4_ID があればそちらで上書きする。
-    const ga4Id = typeof override === 'string' && override.length > 0 ? override : DEFAULT_GA4_ID
-
-    return ga4Id ? createGa4Analytics(ga4Id) : createDummyAnalytics()
-  }, [])
+  const analytics = useMemo(() => createGa4Analytics(), [])
   const payments = useMemo(() => createMockPayments(), [])
   const hintSolver = useMemo(() => createHintSolver(), [])
   const [saveData, setSaveData] = useState<SaveData>(() => storage.load())
