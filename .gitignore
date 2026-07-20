@@ -31,3 +31,6 @@ docs/
 *.njsproj
 *.sln
 *.sw?
+
+# vite-plugin-pwa dev output
+dev-dist
