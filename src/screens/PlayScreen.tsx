@@ -27,7 +27,9 @@ type PlayScreenProps = {
   readonly canUndo: boolean
   readonly hint: PlayHint | null
   readonly freeHintsRemaining: number
+  readonly soundEnabled: boolean
   readonly onBack: () => void
+  readonly onToggleSound: () => void
   readonly onHint: () => void
   readonly onMove: (direction: Direction) => void
   readonly onMovePiece: (pieceId: PieceId, direction: Direction, steps: number) => void
@@ -41,7 +43,9 @@ export function PlayScreen({
   canUndo,
   hint,
   freeHintsRemaining,
+  soundEnabled,
   onBack,
+  onToggleSound,
   onHint,
   onMove,
   onMovePiece,
@@ -68,7 +72,18 @@ export function PlayScreen({
         <button className="text-action" onClick={onBack} type="button">
           問題選択へ
         </button>
-        <p>{state.history.length}手</p>
+        <div className="header-right">
+          <button
+            aria-label={soundEnabled ? '効果音をオフにする' : '効果音をオンにする'}
+            aria-pressed={!soundEnabled}
+            className="mute-toggle"
+            onClick={onToggleSound}
+            type="button"
+          >
+            {soundEnabled ? '🔊' : '🔇'}
+          </button>
+          <p>{state.history.length}手</p>
+        </div>
       </div>
       <h1>{state.puzzle.title}</h1>
       {showsSideExitGuide && (

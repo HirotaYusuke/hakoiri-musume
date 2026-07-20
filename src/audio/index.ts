@@ -1,1 +1,6 @@
-export { playBrickImpactSound } from './brickImpact'
+export {
+  playMoveSound,
+  playWallHitSound,
+  playClearSound,
+  setSoundMuted,
+} from './sounds'

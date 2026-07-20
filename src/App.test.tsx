@@ -50,6 +50,23 @@ describe('App purchase flow', () => {
     expect(await screen.findByText(/「.+」を(上|下|左|右)へ/)).toBeInTheDocument()
   })
 
+  it('設定画面で効果音のオン/オフを切り替え、保存される', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: '設定' }))
+
+    const toggle = screen.getByRole('button', { name: 'オン' })
+
+    expect(toggle).toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.click(toggle)
+
+    expect(screen.getByRole('button', { name: 'オフ' })).toHaveAttribute('aria-pressed', 'false')
+
+    const saved = JSON.parse(localStorage.getItem('hakoiri-musume:save')!)
+
+    expect(saved.settings.soundEnabled).toBe(false)
+  })
+
   it('クリア画面に結果シェアボタンが表示される', () => {
     openPuzzleSelect()
 

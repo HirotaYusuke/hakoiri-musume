@@ -41,12 +41,27 @@ describe('createLocalStorageRepository', () => {
       selectedPuzzleId: 'puzzle-1',
       clearedPuzzleIds: ['puzzle-1'],
       bestMovesByPuzzleId: {},
+      settings: { soundEnabled: true },
       monetization: {
         hasRemovedAds: false,
         usedHintCount: 0,
         purchasedPackIds: [],
       },
     })
+  })
+
+  it('音設定を保存・復元する（旧セーブは既定オン）', () => {
+    const storage = new MemoryStorage()
+    const repository = createLocalStorageRepository(storage)
+
+    repository.save({
+      clearedPuzzleIds: [],
+      bestMovesByPuzzleId: {},
+      settings: { soundEnabled: false },
+      monetization: { hasRemovedAds: false, usedHintCount: 0, purchasedPackIds: [] },
+    })
+
+    expect(repository.load().settings).toEqual({ soundEnabled: false })
   })
 
   it('自己ベストは正の有限数のみ受け入れる', () => {
@@ -71,6 +86,7 @@ describe('createLocalStorageRepository', () => {
     repository.save({
       clearedPuzzleIds: ['puzzle-1'],
       bestMovesByPuzzleId: { 'puzzle-1': 4 },
+      settings: { soundEnabled: true },
       monetization: {
         hasRemovedAds: true,
         usedHintCount: 3,
@@ -82,6 +98,7 @@ describe('createLocalStorageRepository', () => {
     expect(repository.load()).toEqual({
       clearedPuzzleIds: ['puzzle-1'],
       bestMovesByPuzzleId: { 'puzzle-1': 4 },
+      settings: { soundEnabled: true },
       monetization: {
         hasRemovedAds: true,
         usedHintCount: 3,

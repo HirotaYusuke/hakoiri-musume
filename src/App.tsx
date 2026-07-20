@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createDummyAnalytics, createGa4Analytics } from './analytics'
-import { playBrickImpactSound } from './audio'
+import { playClearSound, playMoveSound, playWallHitSound, setSoundMuted } from './audio'
 import './App.css'
 import {
   createInitialState,
@@ -31,13 +31,19 @@ import {
 import { puzzlePacks, puzzles } from './puzzles'
 import { shareResult } from './share'
 import { createHintSolver } from './workers/hintSolver'
-import { ClearScreen, HomeScreen, PlayScreen, PuzzleSelectScreen } from './screens'
-import { createLocalStorageRepository, type SaveData } from './storage'
+import {
+  ClearScreen,
+  HomeScreen,
+  PlayScreen,
+  PuzzleSelectScreen,
+  SettingsScreen,
+} from './screens'
+import { createLocalStorageRepository, emptySaveData, type SaveData } from './storage'
 
 /** GA4 測定ID（公開値・秘密ではない）。ビルド時 VITE_GA4_ID があれば上書きされる。 */
 const DEFAULT_GA4_ID = 'G-3HKWFPBD9H'
 
-type Route = 'home' | 'select' | 'play' | 'clear'
+type Route = 'home' | 'select' | 'play' | 'clear' | 'settings'
 
 type ClearResult = {
   readonly puzzle: Puzzle
@@ -104,6 +110,24 @@ function App() {
     storage.save(nextSaveData)
   }
 
+  /* 音のミュート状態を保存データと同期（起動時・変更時） */
+  useEffect(() => {
+    setSoundMuted(!saveData.settings.soundEnabled)
+  }, [saveData.settings.soundEnabled])
+
+  const toggleSound = () => {
+    const soundEnabled = !saveData.settings.soundEnabled
+
+    analytics.track({ name: 'sound_toggled', enabled: soundEnabled })
+    persist({ ...saveData, settings: { ...saveData.settings, soundEnabled } })
+  }
+
+  const resetProgress = () => {
+    analytics.track({ name: 'progress_reset' })
+    persist({ ...emptySaveData, settings: saveData.settings })
+    setRoute('home')
+  }
+
   const startPuzzle = (puzzle: Puzzle) => {
     const initialState = createInitialState(puzzle)
     /* 初手から動かせる駒を初期選択にする（ゴール駒は初期状態で動けないことが多い） */
@@ -135,13 +159,14 @@ function App() {
     const nextState = movePieceBySteps(puzzleState, { pieceId, direction }, steps)
 
     if (nextState === puzzleState) {
+      playWallHitSound()
       return
     }
 
-    playBrickImpactSound()
     setPuzzleState(nextState)
 
     if (isCleared(nextState)) {
+      playClearSound()
       const puzzleId = nextState.puzzle.id
       const moveCount = nextState.history.length
       const optimalMoves = getOptimalUnitMoves(nextState.puzzle)
@@ -174,6 +199,8 @@ function App() {
         analytics.track({ name: 'ad_interstitial_shown', sessionClearCount: nextSessionClearCount })
         setShowsInterstitial(true)
       }
+    } else {
+      playMoveSound()
     }
   }
 
@@ -358,7 +385,18 @@ function App() {
 
   return (
     <>
-      {route === 'home' && <HomeScreen onStart={() => setRoute('select')} />}
+      {route === 'home' && (
+        <HomeScreen onOpenSettings={() => setRoute('settings')} onStart={() => setRoute('select')} />
+      )}
+      {route === 'settings' && (
+        <SettingsScreen
+          clearedCount={saveData.clearedPuzzleIds.length}
+          onBack={() => setRoute('home')}
+          onResetProgress={resetProgress}
+          onToggleSound={toggleSound}
+          soundEnabled={saveData.settings.soundEnabled}
+        />
+      )}
       {route === 'select' && (
         <PuzzleSelectScreen
           bestMovesByPuzzleId={saveData.bestMovesByPuzzleId}
@@ -398,8 +436,10 @@ function App() {
           onMove={handleMove}
           onMovePiece={handlePieceMove}
           onSelectPiece={setSelectedPieceId}
+          onToggleSound={toggleSound}
           onUndo={() => setPuzzleState((current) => (current ? undo(current) : current))}
           selectedPieceId={selectedPieceId}
+          soundEnabled={saveData.settings.soundEnabled}
           state={puzzleState}
         />
       )}

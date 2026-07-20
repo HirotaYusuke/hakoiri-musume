@@ -1,4 +1,10 @@
-import { emptySaveData, type MonetizationSaveData, type SaveData, type StoragePort } from './port'
+import {
+  emptySaveData,
+  type MonetizationSaveData,
+  type SaveData,
+  type SettingsSaveData,
+  type StoragePort,
+} from './port'
 
 const saveKey = 'hakoiri-musume:save'
 
@@ -21,6 +27,19 @@ const parseMonetizationSaveData = (value: unknown): MonetizationSaveData => {
     lastHintAt: typeof parsed.lastHintAt === 'string' ? parsed.lastHintAt : undefined,
     monetizationDismissedAt:
       typeof parsed.monetizationDismissedAt === 'string' ? parsed.monetizationDismissedAt : undefined,
+  }
+}
+
+const parseSettings = (value: unknown): SettingsSaveData => {
+  if (!value || typeof value !== 'object') {
+    return emptySaveData.settings
+  }
+
+  const parsed = value as Partial<SettingsSaveData>
+
+  return {
+    // 旧セーブや未設定は既定でオン
+    soundEnabled: parsed.soundEnabled !== false,
   }
 }
 
@@ -52,6 +71,7 @@ const parseSaveData = (value: string | null): SaveData => {
         ? parsed.clearedPuzzleIds.filter((id): id is string => typeof id === 'string')
         : [],
       bestMovesByPuzzleId: parseBestMoves(parsed.bestMovesByPuzzleId),
+      settings: parseSettings(parsed.settings),
       monetization: parseMonetizationSaveData(parsed.monetization),
     }
   } catch {
