@@ -34,6 +34,9 @@ import { createHintSolver } from './workers/hintSolver'
 import { ClearScreen, HomeScreen, PlayScreen, PuzzleSelectScreen } from './screens'
 import { createLocalStorageRepository, type SaveData } from './storage'
 
+/** GA4 測定ID（公開値・秘密ではない）。ビルド時 VITE_GA4_ID があれば上書きされる。 */
+const DEFAULT_GA4_ID = 'G-3HKWFPBD9H'
+
 type Route = 'home' | 'select' | 'play' | 'clear'
 
 type ClearResult = {
@@ -57,11 +60,13 @@ type HintState = {
 function App() {
   const storage = useMemo(() => createLocalStorageRepository(), [])
   const analytics = useMemo(() => {
-    const ga4Id: unknown = import.meta.env.VITE_GA4_ID
+    const override: unknown = import.meta.env.VITE_GA4_ID
+    // GA4 測定IDは公開値（ページソースで誰でも参照可能）なので、ホスティング先で
+    // 環境変数を設定できない場合でも計測が動くよう既定値を埋め込む。
+    // ビルド時に VITE_GA4_ID があればそちらで上書きする。
+    const ga4Id = typeof override === 'string' && override.length > 0 ? override : DEFAULT_GA4_ID
 
-    return typeof ga4Id === 'string' && ga4Id.length > 0
-      ? createGa4Analytics(ga4Id)
-      : createDummyAnalytics()
+    return ga4Id ? createGa4Analytics(ga4Id) : createDummyAnalytics()
   }, [])
   const payments = useMemo(() => createMockPayments(), [])
   const hintSolver = useMemo(() => createHintSolver(), [])
